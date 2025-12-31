@@ -1,7 +1,26 @@
-import { Search, Bell, MessageSquare, ChevronDown, Wifi } from "lucide-react";
+import { Search, Bell, MessageSquare, ChevronDown, Wifi, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 export const Header = () => {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+  };
+
+  const username = user?.user_metadata?.username || user?.email?.split("@")[0] || "Player";
+  const initial = username.charAt(0).toUpperCase();
+
   return (
     <header className="h-16 bg-background/80 backdrop-blur-xl border-b border-border/50 flex items-center justify-between px-6">
       {/* Search */}
@@ -40,20 +59,35 @@ export const Header = () => {
           <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
         </Button>
 
-        {/* User Profile */}
-        <button className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-secondary transition-colors">
-          <div className="relative">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
-              N
+        {/* User Profile Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-secondary transition-colors">
+              <div className="relative">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-bold">
+                  {initial}
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-online border-2 border-background rounded-full" />
+              </div>
+              <div className="text-left hidden lg:block">
+                <p className="text-sm font-medium">{username}</p>
+                <p className="text-xs text-muted-foreground">Level 1</p>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground hidden lg:block" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-2 py-2">
+              <p className="text-sm font-medium">{username}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-online border-2 border-background rounded-full" />
-          </div>
-          <div className="text-left hidden lg:block">
-            <p className="text-sm font-medium">NexusPlayer</p>
-            <p className="text-xs text-muted-foreground">Level 42</p>
-          </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground hidden lg:block" />
-        </button>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive cursor-pointer">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
