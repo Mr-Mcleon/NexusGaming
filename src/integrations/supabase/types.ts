@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      games: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          developer: string | null
+          genres: string[] | null
+          id: string
+          price: number | null
+          publisher: string | null
+          rating: number | null
+          release_date: string | null
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          developer?: string | null
+          genres?: string[] | null
+          id?: string
+          price?: number | null
+          publisher?: string | null
+          rating?: number | null
+          release_date?: string | null
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          developer?: string | null
+          genres?: string[] | null
+          id?: string
+          price?: number | null
+          publisher?: string | null
+          rating?: number | null
+          release_date?: string | null
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -40,6 +85,47 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      user_library: {
+        Row: {
+          added_at: string
+          game_id: string
+          id: string
+          installed: boolean
+          is_favorite: boolean
+          last_played_at: string | null
+          play_time_minutes: number
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          game_id: string
+          id?: string
+          installed?: boolean
+          is_favorite?: boolean
+          last_played_at?: string | null
+          play_time_minutes?: number
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          game_id?: string
+          id?: string
+          installed?: boolean
+          is_favorite?: boolean
+          last_played_at?: string | null
+          play_time_minutes?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_library_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
