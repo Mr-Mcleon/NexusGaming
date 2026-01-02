@@ -1,4 +1,4 @@
-import { Search, Bell, MessageSquare, ChevronDown, Wifi, LogOut, Settings } from "lucide-react";
+import { Search, MessageSquare, ChevronDown, Wifi, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationsDropdown } from "./NotificationsDropdown";
 import { toast } from "sonner";
 
 export const Header = () => {
@@ -50,10 +51,7 @@ export const Header = () => {
         </div>
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-        </Button>
+        <NotificationsDropdown />
 
         {/* Messages */}
         <Button variant="ghost" size="icon" className="relative">
