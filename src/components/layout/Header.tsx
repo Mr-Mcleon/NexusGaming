@@ -1,6 +1,7 @@
-import { Search, Bell, MessageSquare, ChevronDown, Wifi, LogOut } from "lucide-react";
+import { Search, Bell, MessageSquare, ChevronDown, Wifi, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,7 @@ import { toast } from "sonner";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
@@ -81,6 +83,11 @@ export const Header = () => {
               <p className="text-sm font-medium">{username}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
+              <Settings className="w-4 h-4 mr-2" />
+              Profile Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive cursor-pointer">
               <LogOut className="w-4 h-4 mr-2" />
