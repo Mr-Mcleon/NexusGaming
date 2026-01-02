@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFriends } from "@/hooks/useFriends";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePresence } from "@/hooks/usePresence";
 import { AddFriendDialog } from "@/components/social/AddFriendDialog";
 import { FriendRequestsDialog } from "@/components/social/FriendRequestsDialog";
 import { Badge } from "@/components/ui/badge";
@@ -65,17 +66,20 @@ const statusColors = {
 export const SocialSection = () => {
   const { user } = useAuth();
   const { friends, pendingRequests, loading, removeFriend } = useFriends();
+  const { isOnline } = usePresence();
   const [activeTab, setActiveTab] = useState<"friends" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Get friend profiles
+  // Get friend profiles with online status
   const friendProfiles = friends.map(f => {
     const profile = f.user_id === user?.id ? f.receiver_profile : f.sender_profile;
+    const friendUserId = f.user_id === user?.id ? f.friend_id : f.user_id;
     return {
       id: f.id,
+      userId: friendUserId,
       name: profile?.username || "Unknown",
       avatar: profile?.username?.[0]?.toUpperCase() || "?",
-      status: "online" as const,
+      online: isOnline(friendUserId),
     };
   });
 
@@ -190,12 +194,14 @@ export const SocialSection = () => {
                           </div>
                           <div className={cn(
                             "absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card",
-                            statusColors[friend.status]
+                            friend.online ? "bg-online" : "bg-offline"
                           )} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium">{friend.name}</h4>
-                          <p className="text-sm text-muted-foreground">Online</p>
+                          <p className={cn("text-sm", friend.online ? "text-online" : "text-muted-foreground")}>
+                            {friend.online ? "Online" : "Offline"}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button variant="ghost" size="icon" className="w-8 h-8">

@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessaging, useConversation, type Conversation } from "@/hooks/useMessaging";
+import { usePresence } from "@/hooks/usePresence";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Channel {
@@ -46,6 +47,7 @@ interface ChatSidebarProps {
 export const ChatSidebar = ({ isOpen, onClose }: ChatSidebarProps) => {
   const { user } = useAuth();
   const { conversations, friends, loading: loadingConversations } = useMessaging();
+  const { isOnline } = usePresence();
   const [expandedSections, setExpandedSections] = useState({
     conversations: true,
     channels: true,
@@ -114,14 +116,19 @@ export const ChatSidebar = ({ isOpen, onClose }: ChatSidebarProps) => {
                   ) : conversations.length === 0 ? (
                     <p className="text-sm text-muted-foreground px-2 py-4">No conversations yet</p>
                   ) : (
-                    conversations.map((convo) => (
-                      <ConversationItem 
-                        key={convo.id} 
-                        conversation={convo}
-                        currentUserId={user?.id}
-                        onClick={() => setActiveConversation(convo.id)}
-                      />
-                    ))
+                    conversations.map((convo) => {
+                      const otherParticipant = convo.participants.find(p => p.user_id !== user?.id);
+                      const isUserOnline = otherParticipant ? isOnline(otherParticipant.user_id) : false;
+                      return (
+                        <ConversationItem 
+                          key={convo.id} 
+                          conversation={convo}
+                          currentUserId={user?.id}
+                          isOnline={isUserOnline}
+                          onClick={() => setActiveConversation(convo.id)}
+                        />
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -213,10 +220,11 @@ export const ChatSidebar = ({ isOpen, onClose }: ChatSidebarProps) => {
 interface ConversationItemProps {
   conversation: Conversation;
   currentUserId?: string;
+  isOnline: boolean;
   onClick: () => void;
 }
 
-const ConversationItem = ({ conversation, currentUserId, onClick }: ConversationItemProps) => {
+const ConversationItem = ({ conversation, currentUserId, isOnline, onClick }: ConversationItemProps) => {
   const otherParticipant = conversation.participants.find(p => p.user_id !== currentUserId);
   const displayName = otherParticipant?.username || "Unknown User";
   const avatar = otherParticipant?.username?.[0]?.toUpperCase() || "?";
@@ -230,7 +238,10 @@ const ConversationItem = ({ conversation, currentUserId, onClick }: Conversation
         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-secondary to-muted flex items-center justify-center text-sm font-medium">
           {avatar}
         </div>
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-sidebar bg-online" />
+        <div className={cn(
+          "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-sidebar",
+          isOnline ? "bg-online" : "bg-offline"
+        )} />
       </div>
       <div className="flex-1 text-left min-w-0">
         <p className="text-sm font-medium truncate">{displayName}</p>
@@ -255,6 +266,7 @@ interface ChatViewProps {
 
 const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
   const { user } = useAuth();
+  const { isOnline } = usePresence();
   const { messages, typingUsers, loading, sendMessage, setTyping, markAsRead } = useConversation(conversationId);
   const [messageInput, setMessageInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -262,6 +274,7 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
 
   const conversation = conversations.find(c => c.id === conversationId);
   const otherParticipant = conversation?.participants.find(p => p.user_id !== user?.id);
+  const isParticipantOnline = otherParticipant ? isOnline(otherParticipant.user_id) : false;
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -314,7 +327,9 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{otherParticipant?.username || "Unknown"}</p>
-          <p className="text-xs text-online">Online</p>
+          <p className={cn("text-xs", isParticipantOnline ? "text-online" : "text-muted-foreground")}>
+            {isParticipantOnline ? "Online" : "Offline"}
+          </p>
         </div>
       </div>
 
