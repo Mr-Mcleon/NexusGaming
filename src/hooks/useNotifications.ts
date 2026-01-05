@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotificationAlerts } from "./useNotificationAlerts";
 
 export interface Notification {
   id: string;
@@ -17,6 +18,14 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const { notifyNewMessage, notifyFriendRequest, requestPermission } = useNotificationAlerts();
+  const previousNotificationIds = useRef<Set<string>>(new Set());
+  const isInitialLoad = useRef(true);
+
+  // Request notification permission on mount
+  useEffect(() => {
+    requestPermission();
+  }, [requestPermission]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -88,8 +97,15 @@ export const useNotifications = () => {
       // Add friend requests
       friendRequests?.forEach(request => {
         const sender = senderProfiles[request.user_id];
+        const notificationId = `fr_${request.id}`;
+        
+        // Check if this is a new notification
+        if (!isInitialLoad.current && !previousNotificationIds.current.has(notificationId)) {
+          notifyFriendRequest(sender?.username || "Someone");
+        }
+        
         notificationsList.push({
-          id: `fr_${request.id}`,
+          id: notificationId,
           type: "friend_request",
           title: "Friend Request",
           description: `${sender?.username || "Someone"} wants to be your friend`,
@@ -111,8 +127,15 @@ export const useNotifications = () => {
       messagesBySender.forEach((msg, senderId) => {
         const sender = messageSenderProfiles[senderId];
         const count = unreadMessages.filter(m => m.sender_id === senderId).length;
+        const notificationId = `msg_${msg.id}`;
+        
+        // Check if this is a new message notification
+        if (!isInitialLoad.current && !previousNotificationIds.current.has(notificationId)) {
+          notifyNewMessage(sender?.username || "Someone", msg.content);
+        }
+        
         notificationsList.push({
-          id: `msg_${msg.id}`,
+          id: notificationId,
           type: "message",
           title: sender?.username || "Someone",
           description: count > 1 ? `${count} new messages` : msg.content.substring(0, 50),
@@ -128,13 +151,17 @@ export const useNotifications = () => {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
+      // Update previous notification IDs for next comparison
+      previousNotificationIds.current = new Set(notificationsList.map(n => n.id));
+      isInitialLoad.current = false;
+
       setNotifications(notificationsList);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, notifyNewMessage, notifyFriendRequest]);
 
   useEffect(() => {
     if (user) {
