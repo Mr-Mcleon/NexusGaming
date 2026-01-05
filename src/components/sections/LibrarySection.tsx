@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, LibraryEntry } from "@/hooks/useGames";
+import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 type FilterType = "all" | "favorites" | "recent";
 type ViewType = "grid" | "list";
@@ -15,13 +17,33 @@ const formatPlayTime = (minutes: number) => {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 };
 
-const LibraryGameCard = ({ entry, variant = "grid" }: { entry: LibraryEntry; variant?: "grid" | "list" }) => {
+const LibraryGameCard = ({ 
+  entry, 
+  variant = "grid",
+  isPlaying,
+  onPlay,
+  onStop
+}: { 
+  entry: LibraryEntry; 
+  variant?: "grid" | "list";
+  isPlaying: boolean;
+  onPlay: () => void;
+  onStop: () => void;
+}) => {
   const toggleFavorite = useToggleFavorite();
-  const removeFromLibrary = useRemoveFromLibrary();
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleFavorite.mutate({ gameId: entry.game_id, isFavorite: !entry.is_favorite });
+  };
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPlaying) {
+      onStop();
+    } else {
+      onPlay();
+    }
   };
 
   if (variant === "list") {
@@ -35,7 +57,14 @@ const LibraryGameCard = ({ entry, variant = "grid" }: { entry: LibraryEntry; var
           />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-lg truncate">{entry.game.title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-lg truncate">{entry.game.title}</h3>
+            {isPlaying && (
+              <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full animate-pulse">
+                Playing
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">{entry.game.developer}</p>
           <div className="flex items-center gap-4 mt-2">
             {entry.play_time_minutes > 0 && (
@@ -61,9 +90,22 @@ const LibraryGameCard = ({ entry, variant = "grid" }: { entry: LibraryEntry; var
           >
             <Heart className={cn("w-5 h-5", entry.is_favorite && "fill-current")} />
           </button>
-          <Button variant="gaming" size="sm">
-            <Play className="w-4 h-4 mr-1" />
-            Play
+          <Button 
+            variant={isPlaying ? "destructive" : "gaming"} 
+            size="sm"
+            onClick={handlePlayClick}
+          >
+            {isPlaying ? (
+              <>
+                <Square className="w-4 h-4 mr-1" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-1" />
+                Play
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -72,6 +114,11 @@ const LibraryGameCard = ({ entry, variant = "grid" }: { entry: LibraryEntry; var
 
   return (
     <div className="group relative rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer">
+      {isPlaying && (
+        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-primary/90 text-primary-foreground text-xs rounded-full animate-pulse">
+          Playing
+        </div>
+      )}
       <div className="aspect-[3/4] overflow-hidden">
         <img
           src={entry.game.cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400"}
@@ -104,9 +151,23 @@ const LibraryGameCard = ({ entry, variant = "grid" }: { entry: LibraryEntry; var
           ) : (
             <span className="text-xs text-muted-foreground">Not played yet</span>
           )}
-          <Button variant="gaming" size="sm" className="h-7 text-xs">
-            <Play className="w-3 h-3 mr-1" />
-            Play
+          <Button 
+            variant={isPlaying ? "destructive" : "gaming"} 
+            size="sm" 
+            className="h-7 text-xs"
+            onClick={handlePlayClick}
+          >
+            {isPlaying ? (
+              <>
+                <Square className="w-3 h-3 mr-1" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 mr-1" />
+                Play
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -118,8 +179,26 @@ export const LibrarySection = () => {
   const [filter, setFilter] = useState<FilterType>("all");
   const [view, setView] = useState<ViewType>("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentlyPlayingGameId, setCurrentlyPlayingGameId] = useState<string | null>(null);
   
   const { data: library = [], isLoading } = useUserLibrary();
+  const { setPlaying, stopPlaying } = useSetPlayingStatus();
+
+  const handlePlay = async (gameId: string, gameTitle: string) => {
+    const success = await setPlaying(gameId);
+    if (success) {
+      setCurrentlyPlayingGameId(gameId);
+      toast.success(`Now playing ${gameTitle}`);
+    }
+  };
+
+  const handleStop = async () => {
+    const success = await stopPlaying();
+    if (success) {
+      setCurrentlyPlayingGameId(null);
+      toast.info("Stopped playing");
+    }
+  };
 
   const filteredLibrary = library.filter((entry) => {
     const matchesFilter = 
@@ -223,13 +302,27 @@ export const LibrarySection = () => {
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
             {filteredLibrary.map((entry) => (
-              <LibraryGameCard key={entry.id} entry={entry} variant="grid" />
+              <LibraryGameCard 
+                key={entry.id} 
+                entry={entry} 
+                variant="grid"
+                isPlaying={currentlyPlayingGameId === entry.game_id}
+                onPlay={() => handlePlay(entry.game_id, entry.game.title)}
+                onStop={handleStop}
+              />
             ))}
           </div>
         ) : (
           <div className="space-y-3">
             {filteredLibrary.map((entry) => (
-              <LibraryGameCard key={entry.id} entry={entry} variant="list" />
+              <LibraryGameCard 
+                key={entry.id} 
+                entry={entry} 
+                variant="list"
+                isPlaying={currentlyPlayingGameId === entry.game_id}
+                onPlay={() => handlePlay(entry.game_id, entry.game.title)}
+                onStop={handleStop}
+              />
             ))}
           </div>
         )}
