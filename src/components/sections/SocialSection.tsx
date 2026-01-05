@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Users, 
   MessageSquare, 
@@ -10,13 +10,15 @@ import {
   Volume2,
   Crown,
   Bell,
-  UserMinus
+  UserMinus,
+  Gamepad2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFriends } from "@/hooks/useFriends";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePresence } from "@/hooks/usePresence";
+import { usePlayingStatus } from "@/hooks/usePlayingStatus";
 import { AddFriendDialog } from "@/components/social/AddFriendDialog";
 import { FriendRequestsDialog } from "@/components/social/FriendRequestsDialog";
 import { Badge } from "@/components/ui/badge";
@@ -70,16 +72,26 @@ export const SocialSection = () => {
   const [activeTab, setActiveTab] = useState<"friends" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Get friend profiles with online status
+  // Get friend user IDs for playing status lookup
+  const friendUserIds = useMemo(() => 
+    friends.map(f => f.user_id === user?.id ? f.friend_id : f.user_id),
+    [friends, user?.id]
+  );
+  
+  const { getPlayingGame } = usePlayingStatus(friendUserIds);
+
+  // Get friend profiles with online status and playing game
   const friendProfiles = friends.map(f => {
     const profile = f.user_id === user?.id ? f.receiver_profile : f.sender_profile;
     const friendUserId = f.user_id === user?.id ? f.friend_id : f.user_id;
+    const playingGame = getPlayingGame(friendUserId);
     return {
       id: f.id,
       userId: friendUserId,
       name: profile?.username || "Unknown",
       avatar: profile?.username?.[0]?.toUpperCase() || "?",
       online: isOnline(friendUserId),
+      playingGame,
     };
   });
 
@@ -199,9 +211,16 @@ export const SocialSection = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium">{friend.name}</h4>
-                          <p className={cn("text-sm", friend.online ? "text-online" : "text-muted-foreground")}>
-                            {friend.online ? "Online" : "Offline"}
-                          </p>
+                          {friend.playingGame ? (
+                            <p className="text-sm text-primary flex items-center gap-1">
+                              <Gamepad2 className="w-3 h-3" />
+                              Playing {friend.playingGame}
+                            </p>
+                          ) : (
+                            <p className={cn("text-sm", friend.online ? "text-online" : "text-muted-foreground")}>
+                              {friend.online ? "Online" : "Offline"}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button variant="ghost" size="icon" className="w-8 h-8">
