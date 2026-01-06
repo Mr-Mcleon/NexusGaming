@@ -9,10 +9,14 @@ import { CloudSection } from "@/components/sections/CloudSection";
 import { SocialSection } from "@/components/sections/SocialSection";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useFriendActivityAlerts } from "@/hooks/useFriendActivityAlerts";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [chatOpen, setChatOpen] = useState(false);
+  
+  // Listen for friend activity and show alerts
+  useFriendActivityAlerts();
 
   const renderContent = () => {
     switch (activeTab) {
