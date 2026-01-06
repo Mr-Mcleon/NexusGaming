@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, LibraryEntry } from "@/hooks/useGames";
+import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, LibraryEntry } from "@/hooks/useGames";
 import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -180,23 +180,44 @@ export const LibrarySection = () => {
   const [view, setView] = useState<ViewType>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentlyPlayingGameId, setCurrentlyPlayingGameId] = useState<string | null>(null);
+  const playStartTimeRef = useRef<number | null>(null);
   
   const { data: library = [], isLoading } = useUserLibrary();
   const { setPlaying, stopPlaying } = useSetPlayingStatus();
+  const updatePlayTime = useUpdatePlayTime();
 
   const handlePlay = async (gameId: string, gameTitle: string) => {
     const success = await setPlaying(gameId);
     if (success) {
       setCurrentlyPlayingGameId(gameId);
+      playStartTimeRef.current = Date.now();
       toast.success(`Now playing ${gameTitle}`);
     }
   };
 
   const handleStop = async () => {
+    const gameId = currentlyPlayingGameId;
+    const startTime = playStartTimeRef.current;
+    
     const success = await stopPlaying();
     if (success) {
+      // Calculate elapsed time and update play time
+      if (gameId && startTime) {
+        const elapsedMinutes = Math.round((Date.now() - startTime) / 60000);
+        const entry = library.find(e => e.game_id === gameId);
+        if (entry && elapsedMinutes > 0) {
+          const newTotal = entry.play_time_minutes + elapsedMinutes;
+          updatePlayTime.mutate({ gameId, minutes: newTotal });
+          toast.info(`Stopped playing (+${elapsedMinutes}m added)`);
+        } else {
+          toast.info("Stopped playing");
+        }
+      } else {
+        toast.info("Stopped playing");
+      }
+      
       setCurrentlyPlayingGameId(null);
-      toast.info("Stopped playing");
+      playStartTimeRef.current = null;
     }
   };
 
