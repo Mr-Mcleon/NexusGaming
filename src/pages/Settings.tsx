@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Camera, Loader2, Save, User } from "lucide-react";
+import { ArrowLeft, Bell, Camera, Loader2, Save, User, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 
 interface Profile {
   username: string | null;
@@ -18,6 +20,7 @@ interface Profile {
 export default function Settings() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { soundEnabled, desktopEnabled, setSoundEnabled, setDesktopEnabled } = useNotificationSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(true);
@@ -251,6 +254,46 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground">
                 {(profile.bio?.length || 0)}/500 characters
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Notification Settings Section */}
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="font-medium mb-4">Notifications</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Volume2 className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="sound-toggle" className="cursor-pointer">Sound Effects</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Play a sound for new messages and friend requests
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="sound-toggle"
+                checked={soundEnabled}
+                onCheckedChange={setSoundEnabled}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Bell className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="desktop-toggle" className="cursor-pointer">Desktop Notifications</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Show browser notifications when you receive alerts
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="desktop-toggle"
+                checked={desktopEnabled}
+                onCheckedChange={setDesktopEnabled}
+              />
             </div>
           </div>
         </div>
