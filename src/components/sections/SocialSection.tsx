@@ -11,7 +11,8 @@ import {
   Crown,
   Bell,
   UserMinus,
-  Gamepad2
+  Gamepad2,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import { usePresence } from "@/hooks/usePresence";
 import { usePlayingStatus } from "@/hooks/usePlayingStatus";
 import { AddFriendDialog } from "@/components/social/AddFriendDialog";
 import { FriendRequestsDialog } from "@/components/social/FriendRequestsDialog";
+import { ActivityFeed } from "@/components/social/ActivityFeed";
 import { Badge } from "@/components/ui/badge";
 
 interface Server {
@@ -69,7 +71,7 @@ export const SocialSection = () => {
   const { user } = useAuth();
   const { friends, pendingRequests, loading, removeFriend } = useFriends();
   const { isOnline } = usePresence();
-  const [activeTab, setActiveTab] = useState<"friends" | "servers">("friends");
+  const [activeTab, setActiveTab] = useState<"friends" | "activity" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get friend user IDs for playing status lookup
@@ -131,11 +133,12 @@ export const SocialSection = () => {
           <div className="flex items-center gap-4">
             {[
               { id: "friends", label: "Friends", icon: Users, count: friendProfiles.length },
+              { id: "activity", label: "Activity", icon: Activity, count: null },
               { id: "servers", label: "Servers", icon: Hash, count: servers.length },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as "friends" | "servers")}
+                onClick={() => setActiveTab(tab.id as "friends" | "activity" | "servers")}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
                   activeTab === tab.id
@@ -145,27 +148,31 @@ export const SocialSection = () => {
               >
                 <tab.icon className="w-4 h-4" />
                 <span className="font-medium">{tab.label}</span>
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full text-xs",
-                  activeTab === tab.id ? "bg-primary/20" : "bg-muted"
-                )}>
-                  {tab.count}
-                </span>
+                {tab.count !== null && (
+                  <span className={cn(
+                    "px-2 py-0.5 rounded-full text-xs",
+                    activeTab === tab.id ? "bg-primary/20" : "bg-muted"
+                  )}>
+                    {tab.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
-          {/* Search */}
-          <div className="relative mt-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={activeTab === "friends" ? "Search friends..." : "Search servers..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 bg-secondary/50 border border-border/50 rounded-lg focus:outline-none focus:border-primary/50 transition-all"
-            />
-          </div>
+          {/* Search - hide for activity tab */}
+          {activeTab !== "activity" && (
+            <div className="relative mt-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder={activeTab === "friends" ? "Search friends..." : "Search servers..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-10 pr-4 bg-secondary/50 border border-border/50 rounded-lg focus:outline-none focus:border-primary/50 transition-all"
+              />
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -243,6 +250,13 @@ export const SocialSection = () => {
                   </div>
                 </div>
               )}
+            </div>
+          ) : activeTab === "activity" ? (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                Recent Activity
+              </h3>
+              <ActivityFeed />
             </div>
           ) : (
             <div className="space-y-4">

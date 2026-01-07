@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, LibraryEntry } from "@/hooks/useGames";
 import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
+import { useLogActivity } from "@/hooks/useActivityFeed";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -189,12 +190,14 @@ export const LibrarySection = () => {
   const { data: library = [], isLoading } = useUserLibrary();
   const { setPlaying, stopPlaying } = useSetPlayingStatus();
   const updatePlayTime = useUpdatePlayTime();
+  const logActivity = useLogActivity();
 
   const handlePlay = async (gameId: string, gameTitle: string) => {
     const success = await setPlaying(gameId);
     if (success) {
       setCurrentlyPlayingGameId(gameId);
       playStartTimeRef.current = Date.now();
+      logActivity.mutate({ activityType: "game_started", gameId });
       toast.success(`Now playing ${gameTitle}`);
     }
   };
@@ -205,6 +208,11 @@ export const LibrarySection = () => {
     
     const success = await stopPlaying();
     if (success) {
+      // Log stop activity
+      if (gameId) {
+        logActivity.mutate({ activityType: "game_stopped", gameId });
+      }
+      
       // Calculate elapsed time and update play time
       if (gameId && startTime) {
         const elapsedMinutes = Math.round((Date.now() - startTime) / 60000);
