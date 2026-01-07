@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,13 +23,15 @@ const LibraryGameCard = ({
   variant = "grid",
   isPlaying,
   onPlay,
-  onStop
+  onStop,
+  onClick
 }: { 
   entry: LibraryEntry; 
   variant?: "grid" | "list";
   isPlaying: boolean;
   onPlay: () => void;
   onStop: () => void;
+  onClick: () => void;
 }) => {
   const toggleFavorite = useToggleFavorite();
 
@@ -48,7 +51,7 @@ const LibraryGameCard = ({
 
   if (variant === "list") {
     return (
-      <div className="group glass-card rounded-xl p-4 flex items-center gap-4 hover:bg-secondary/50 transition-all duration-200 cursor-pointer">
+      <div onClick={onClick} className="group glass-card rounded-xl p-4 flex items-center gap-4 hover:bg-secondary/50 transition-all duration-200 cursor-pointer">
         <div className="w-20 h-28 rounded-lg overflow-hidden flex-shrink-0">
           <img
             src={entry.game.cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200"}
@@ -113,7 +116,7 @@ const LibraryGameCard = ({
   }
 
   return (
-    <div className="group relative rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer">
+    <div onClick={onClick} className="group relative rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer">
       {isPlaying && (
         <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-primary/90 text-primary-foreground text-xs rounded-full animate-pulse">
           Playing
@@ -176,6 +179,7 @@ const LibraryGameCard = ({
 };
 
 export const LibrarySection = () => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
   const [view, setView] = useState<ViewType>("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -330,6 +334,7 @@ export const LibrarySection = () => {
                 isPlaying={currentlyPlayingGameId === entry.game_id}
                 onPlay={() => handlePlay(entry.game_id, entry.game.title)}
                 onStop={handleStop}
+                onClick={() => navigate(`/game/${entry.game_id}`)}
               />
             ))}
           </div>
@@ -343,6 +348,7 @@ export const LibrarySection = () => {
                 isPlaying={currentlyPlayingGameId === entry.game_id}
                 onPlay={() => handlePlay(entry.game_id, entry.game.title)}
                 onStop={handleStop}
+                onClick={() => navigate(`/game/${entry.game_id}`)}
               />
             ))}
           </div>
