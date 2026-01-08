@@ -14,7 +14,8 @@ import {
   Gamepad2,
   Activity,
   Trophy,
-  BarChart3
+  BarChart3,
+  Ban
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ import { AchievementsList } from "@/components/social/AchievementsList";
 import { Leaderboard } from "@/components/social/Leaderboard";
 import { Badge } from "@/components/ui/badge";
 import { useUserAchievements } from "@/hooks/useAchievements";
+import { useBlockUser } from "@/hooks/useBlockedUsers";
 
 interface Server {
   id: string;
@@ -77,6 +79,7 @@ export const SocialSection = () => {
   const { friends, pendingRequests, loading, removeFriend } = useFriends();
   const { isOnline } = usePresence();
   const { data: userAchievements } = useUserAchievements();
+  const blockUser = useBlockUser();
   const [activeTab, setActiveTab] = useState<"friends" | "activity" | "leaderboard" | "achievements" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -249,8 +252,21 @@ export const SocialSection = () => {
                             size="icon" 
                             className="w-8 h-8 text-destructive hover:text-destructive"
                             onClick={() => removeFriend(friend.id)}
+                            title="Remove friend"
                           >
                             <UserMinus className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="w-8 h-8 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              blockUser.mutate(friend.userId);
+                              removeFriend(friend.id);
+                            }}
+                            title="Block user"
+                          >
+                            <Ban className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>

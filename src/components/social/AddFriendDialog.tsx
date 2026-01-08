@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, UserPlus, Check, Clock } from "lucide-react";
+import { Search, UserPlus, Check, Clock, Ban } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFriends, type UserProfile } from "@/hooks/useFriends";
-import { cn } from "@/lib/utils";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 interface AddFriendDialogProps {
   children: React.ReactNode;
@@ -18,11 +18,17 @@ interface AddFriendDialogProps {
 
 export const AddFriendDialog = ({ children }: AddFriendDialogProps) => {
   const { searchUsers, sendFriendRequest, sentRequests, friends } = useFriends();
+  const { data: blockedUsers } = useBlockedUsers();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [searching, setSearching] = useState(false);
   const [sendingTo, setSendingTo] = useState<string | null>(null);
+
+  // Filter out blocked users from search results
+  const filteredResults = searchResults.filter(
+    (profile) => !blockedUsers?.some((b) => b.blocked_user_id === profile.user_id)
+  );
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -83,10 +89,10 @@ export const AddFriendDialog = ({ children }: AddFriendDialogProps) => {
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {searching ? (
               <p className="text-center text-muted-foreground py-4">Searching...</p>
-            ) : searchResults.length === 0 && searchQuery ? (
+            ) : filteredResults.length === 0 && searchQuery ? (
               <p className="text-center text-muted-foreground py-4">No users found</p>
             ) : (
-              searchResults.map((profile) => {
+              filteredResults.map((profile) => {
                 const status = getStatus(profile.user_id);
                 
                 return (
