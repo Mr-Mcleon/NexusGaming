@@ -13,7 +13,8 @@ import {
   UserMinus,
   Gamepad2,
   Activity,
-  Trophy
+  Trophy,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import { AddFriendDialog } from "@/components/social/AddFriendDialog";
 import { FriendRequestsDialog } from "@/components/social/FriendRequestsDialog";
 import { ActivityFeed } from "@/components/social/ActivityFeed";
 import { AchievementsList } from "@/components/social/AchievementsList";
+import { Leaderboard } from "@/components/social/Leaderboard";
 import { Badge } from "@/components/ui/badge";
 import { useUserAchievements } from "@/hooks/useAchievements";
 
@@ -75,7 +77,7 @@ export const SocialSection = () => {
   const { friends, pendingRequests, loading, removeFriend } = useFriends();
   const { isOnline } = usePresence();
   const { data: userAchievements } = useUserAchievements();
-  const [activeTab, setActiveTab] = useState<"friends" | "activity" | "achievements" | "servers">("friends");
+  const [activeTab, setActiveTab] = useState<"friends" | "activity" | "leaderboard" | "achievements" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Get friend user IDs for playing status lookup
@@ -138,12 +140,13 @@ export const SocialSection = () => {
             {[
               { id: "friends", label: "Friends", icon: Users, count: friendProfiles.length },
               { id: "activity", label: "Activity", icon: Activity, count: null },
+              { id: "leaderboard", label: "Leaderboard", icon: BarChart3, count: null },
               { id: "achievements", label: "Achievements", icon: Trophy, count: userAchievements?.length || 0 },
               { id: "servers", label: "Servers", icon: Hash, count: servers.length },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as "friends" | "activity" | "achievements" | "servers")}
+                onClick={() => setActiveTab(tab.id as "friends" | "activity" | "leaderboard" | "achievements" | "servers")}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
                   activeTab === tab.id
@@ -166,7 +169,7 @@ export const SocialSection = () => {
           </div>
 
           {/* Search - hide for activity and achievements tabs */}
-          {activeTab !== "activity" && activeTab !== "achievements" && (
+          {activeTab !== "activity" && activeTab !== "achievements" && activeTab !== "leaderboard" && (
             <div className="relative mt-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -263,6 +266,8 @@ export const SocialSection = () => {
               </h3>
               <ActivityFeed />
             </div>
+          ) : activeTab === "leaderboard" ? (
+            <Leaderboard />
           ) : activeTab === "achievements" ? (
             <AchievementsList />
           ) : (
