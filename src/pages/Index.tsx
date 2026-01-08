@@ -10,10 +10,14 @@ import { SocialSection } from "@/components/sections/SocialSection";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFriendActivityAlerts } from "@/hooks/useFriendActivityAlerts";
+import { useAchievementChecker } from "@/hooks/useAchievements";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [chatOpen, setChatOpen] = useState(false);
+  
+  // Check for achievement unlocks
+  useAchievementChecker();
   
   // Listen for friend activity and show alerts
   useFriendActivityAlerts();
