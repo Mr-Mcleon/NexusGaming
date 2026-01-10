@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Clock, Star, ChevronRight, Flame, Gift, Percent, Plus, Check, ShoppingCart } from "lucide-react";
+import { Clock, Star, ChevronRight, Flame, Gift, Percent, Plus, Check, ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGames, useUserLibrary, useAddToLibrary, Game } from "@/hooks/useGames";
+import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/hooks/useWishlist";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const categories = [
@@ -18,14 +19,20 @@ const categories = [
 
 const StoreGameCard = ({ 
   game, 
-  isOwned, 
+  isOwned,
+  isWishlisted,
   onAddToLibrary,
-  isAdding 
+  onToggleWishlist,
+  isAdding,
+  isTogglingWishlist,
 }: { 
   game: Game; 
   isOwned: boolean;
+  isWishlisted: boolean;
   onAddToLibrary: () => void;
+  onToggleWishlist: () => void;
   isAdding: boolean;
+  isTogglingWishlist: boolean;
 }) => {
   return (
     <div className="group glass-card rounded-xl overflow-hidden hover:scale-[1.02] transition-all duration-300 cursor-pointer">
@@ -40,11 +47,28 @@ const StoreGameCard = ({
             FREE
           </div>
         )}
-        {isOwned && (
-          <div className="absolute top-2 right-2 px-2 py-1 bg-online/90 text-white text-xs font-bold rounded-full flex items-center gap-1">
-            <Check className="w-3 h-3" /> Owned
-          </div>
-        )}
+        <div className="absolute top-2 right-2 flex flex-col gap-1">
+          {isOwned && (
+            <div className="px-2 py-1 bg-online/90 text-white text-xs font-bold rounded-full flex items-center gap-1">
+              <Check className="w-3 h-3" /> Owned
+            </div>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleWishlist();
+            }}
+            disabled={isTogglingWishlist}
+            className={cn(
+              "p-1.5 rounded-full transition-all",
+              isWishlisted 
+                ? "bg-destructive text-destructive-foreground" 
+                : "bg-background/80 text-muted-foreground hover:text-destructive"
+            )}
+          >
+            <Heart className={cn("w-4 h-4", isWishlisted && "fill-current")} />
+          </button>
+        </div>
       </div>
       <div className="p-3">
         <div className="flex items-center gap-2 mb-2">
@@ -106,9 +130,21 @@ export const StoreSection = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const { data: games = [], isLoading: gamesLoading } = useGames();
   const { data: library = [] } = useUserLibrary();
+  const { data: wishlist = [] } = useWishlist();
   const addToLibrary = useAddToLibrary();
+  const addToWishlist = useAddToWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
 
   const ownedGameIds = new Set(library.map(entry => entry.game_id));
+  const wishlistedGameIds = new Set(wishlist.map(entry => entry.game_id));
+
+  const toggleWishlist = (gameId: string) => {
+    if (wishlistedGameIds.has(gameId)) {
+      removeFromWishlist.mutate(gameId);
+    } else {
+      addToWishlist.mutate(gameId);
+    }
+  };
 
   const filteredGames = games.filter(game => {
     if (activeCategory === "all") return true;
@@ -222,8 +258,11 @@ export const StoreSection = () => {
                   key={game.id}
                   game={game}
                   isOwned={ownedGameIds.has(game.id)}
+                  isWishlisted={wishlistedGameIds.has(game.id)}
                   onAddToLibrary={() => addToLibrary.mutate(game.id)}
+                  onToggleWishlist={() => toggleWishlist(game.id)}
                   isAdding={addToLibrary.isPending}
+                  isTogglingWishlist={addToWishlist.isPending || removeFromWishlist.isPending}
                 />
               ))}
             </div>
