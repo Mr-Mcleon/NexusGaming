@@ -470,6 +470,35 @@ export type Database = {
           },
         ]
       }
+      wishlist: {
+        Row: {
+          added_at: string
+          game_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          game_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          game_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

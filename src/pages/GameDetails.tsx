@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useGameDetails";
 import { useAddToLibrary, useUserLibrary } from "@/hooks/useGames";
 import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
+import { useWishlist, useAddToWishlist, useRemoveFromWishlist } from "@/hooks/useWishlist";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -43,6 +44,10 @@ const GameDetails = () => {
   const { setPlaying } = useSetPlayingStatus();
   const submitReview = useSubmitReview();
   const deleteReview = useDeleteReview();
+  
+  const { data: wishlist = [] } = useWishlist();
+  const addToWishlist = useAddToWishlist();
+  const removeFromWishlist = useRemoveFromWishlist();
 
   const [currentScreenshot, setCurrentScreenshot] = useState(0);
   const [reviewRating, setReviewRating] = useState(5);
@@ -50,6 +55,7 @@ const GameDetails = () => {
   const [reviewContent, setReviewContent] = useState("");
 
   const isInLibrary = library.some((entry) => entry.game_id === gameId);
+  const isInWishlist = wishlist.some((entry) => entry.game_id === gameId);
   const userReview = reviews.find((r) => r.user_id === user?.id);
   const averageRating = reviews.length > 0
     ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
@@ -66,6 +72,15 @@ const GameDetails = () => {
   const handleAddToLibrary = () => {
     if (gameId) {
       addToLibrary.mutate(gameId);
+    }
+  };
+
+  const handleToggleWishlist = () => {
+    if (!gameId) return;
+    if (isInWishlist) {
+      removeFromWishlist.mutate(gameId);
+    } else {
+      addToWishlist.mutate(gameId);
     }
   };
 
@@ -174,9 +189,15 @@ const GameDetails = () => {
                   Add to Library
                 </Button>
               )}
-              <Button variant="glass" size="lg">
-                <Heart className="w-5 h-5" />
-                Wishlist
+              <Button 
+                variant="glass" 
+                size="lg"
+                onClick={handleToggleWishlist}
+                disabled={addToWishlist.isPending || removeFromWishlist.isPending}
+                className={cn(isInWishlist && "text-destructive")}
+              >
+                <Heart className={cn("w-5 h-5", isInWishlist && "fill-current")} />
+                {isInWishlist ? "In Wishlist" : "Wishlist"}
               </Button>
             </div>
           </div>
