@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Bell, Camera, Loader2, Save, User, Volume2 } from "lucide-react";
+import { ArrowLeft, Bell, Camera, Loader2, Save, User, Volume2, ShieldOff, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
+import { useBlockedUsers, useUnblockUser } from "@/hooks/useBlockedUsers";
+import { useQuery } from "@tanstack/react-query";
 
 interface Profile {
   username: string | null;
@@ -30,6 +33,27 @@ export default function Settings() {
     username: "",
     avatar_url: null,
     bio: "",
+  });
+
+  // Blocked users
+  const { data: blockedUsers = [], isLoading: blockedLoading } = useBlockedUsers();
+  const unblockUser = useUnblockUser();
+
+  // Fetch profiles for blocked users
+  const { data: blockedProfiles = [] } = useQuery({
+    queryKey: ["blocked-profiles", blockedUsers.map(b => b.blocked_user_id)],
+    queryFn: async () => {
+      if (blockedUsers.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, username, avatar_url")
+        .in("user_id", blockedUsers.map(b => b.blocked_user_id));
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: blockedUsers.length > 0,
   });
 
   useEffect(() => {
@@ -296,6 +320,66 @@ export default function Settings() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Blocked Users Section */}
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldOff className="w-5 h-5 text-muted-foreground" />
+            <h2 className="font-medium">Blocked Users</h2>
+          </div>
+          
+          {blockedLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : blockedUsers.length === 0 ? (
+            <div className="text-center py-8">
+              <UserX className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                You haven't blocked any users
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {blockedUsers.map((blocked) => {
+                const profile = blockedProfiles.find(p => p.user_id === blocked.blocked_user_id);
+                return (
+                  <div 
+                    key={blocked.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage src={profile?.avatar_url || undefined} />
+                        <AvatarFallback className="bg-primary/20">
+                          {profile?.username?.[0]?.toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{profile?.username || "Unknown User"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Blocked on {new Date(blocked.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => unblockUser.mutate(blocked.blocked_user_id)}
+                      disabled={unblockUser.isPending}
+                    >
+                      {unblockUser.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Unblock"
+                      )}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Save Button */}
