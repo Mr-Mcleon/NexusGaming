@@ -262,6 +262,7 @@ export type Database = {
           publisher: string | null
           rating: number | null
           release_date: string | null
+          sale_price: number | null
           tags: string[] | null
           title: string
         }
@@ -276,6 +277,7 @@ export type Database = {
           publisher?: string | null
           rating?: number | null
           release_date?: string | null
+          sale_price?: number | null
           tags?: string[] | null
           title: string
         }
@@ -290,6 +292,7 @@ export type Database = {
           publisher?: string | null
           rating?: number | null
           release_date?: string | null
+          sale_price?: number | null
           tags?: string[] | null
           title?: string
         }
@@ -365,6 +368,44 @@ export type Database = {
           {
             foreignKeyName: "profiles_currently_playing_game_id_fkey"
             columns: ["currently_playing_game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_notifications: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          original_price: number
+          read: boolean
+          sale_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          original_price: number
+          read?: boolean
+          sale_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          original_price?: number
+          read?: boolean
+          sale_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_notifications_game_id_fkey"
+            columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
             referencedColumns: ["id"]
