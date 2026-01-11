@@ -1,15 +1,16 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, LibraryEntry } from "@/hooks/useGames";
+import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
 import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
 import { useLogActivity } from "@/hooks/useActivityFeed";
+import { useWishlistWithGames, useRemoveFromWishlist } from "@/hooks/useWishlist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
-type FilterType = "all" | "favorites" | "recent";
+type FilterType = "all" | "favorites" | "recent" | "wishlist";
 type ViewType = "grid" | "list";
 
 const formatPlayTime = (minutes: number) => {
@@ -179,6 +180,134 @@ const LibraryGameCard = ({
   );
 };
 
+interface WishlistGame {
+  id: string;
+  added_at: string;
+  game: {
+    id: string;
+    title: string;
+    description: string | null;
+    cover_image_url: string | null;
+    price: number | null;
+    rating: number | null;
+    genres: string[] | null;
+  } | null;
+}
+
+const WishlistGameCard = ({ 
+  item, 
+  variant = "grid",
+  onClick,
+  onAddToLibrary,
+  onRemove
+}: { 
+  item: WishlistGame; 
+  variant?: "grid" | "list";
+  onClick: () => void;
+  onAddToLibrary: () => void;
+  onRemove: () => void;
+}) => {
+  if (!item.game) return null;
+
+  if (variant === "list") {
+    return (
+      <div onClick={onClick} className="group glass-card rounded-xl p-4 flex items-center gap-4 hover:bg-secondary/50 transition-all duration-200 cursor-pointer">
+        <div className="w-20 h-28 rounded-lg overflow-hidden flex-shrink-0">
+          <img
+            src={item.game.cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200"}
+            alt={item.game.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-medium text-lg truncate">{item.game.title}</h3>
+          <p className="text-sm text-muted-foreground line-clamp-2">{item.game.description}</p>
+          <div className="flex items-center gap-4 mt-2">
+            {item.game.price !== null && (
+              <span className="text-primary font-semibold">
+                {item.game.price === 0 ? "Free" : `$${item.game.price.toFixed(2)}`}
+              </span>
+            )}
+            {item.game.genres?.slice(0, 2).map((genre) => (
+              <span key={genre} className="px-2 py-0.5 bg-secondary text-xs rounded-full text-muted-foreground">
+                {genre}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+          >
+            <Heart className="w-4 h-4 mr-1 fill-current text-destructive" />
+            Remove
+          </Button>
+          <Button 
+            variant="gaming" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToLibrary();
+            }}
+          >
+            <Download className="w-4 h-4 mr-1" />
+            Add to Library
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div onClick={onClick} className="group relative rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer">
+      <div className="aspect-[3/4] overflow-hidden">
+        <img
+          src={item.game.cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400"}
+          alt={item.game.title}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </div>
+      
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="absolute top-2 right-2 p-2 rounded-lg backdrop-blur-sm transition-all bg-destructive/20 text-destructive"
+      >
+        <Heart className="w-4 h-4 fill-current" />
+      </button>
+
+      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-background/50 backdrop-blur-sm">
+        <h3 className="font-medium text-sm truncate mb-1">{item.game.title}</h3>
+        <div className="flex items-center justify-between">
+          <span className="text-primary font-semibold text-sm">
+            {item.game.price === 0 || item.game.price === null ? "Free" : `$${item.game.price.toFixed(2)}`}
+          </span>
+          <Button 
+            variant="gaming" 
+            size="sm" 
+            className="h-7 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToLibrary();
+            }}
+          >
+            <Download className="w-3 h-3 mr-1" />
+            Get
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const LibrarySection = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
@@ -188,9 +317,12 @@ export const LibrarySection = () => {
   const playStartTimeRef = useRef<number | null>(null);
   
   const { data: library = [], isLoading } = useUserLibrary();
+  const { data: wishlist = [], isLoading: isLoadingWishlist } = useWishlistWithGames();
   const { setPlaying, stopPlaying } = useSetPlayingStatus();
   const updatePlayTime = useUpdatePlayTime();
   const logActivity = useLogActivity();
+  const addToLibrary = useAddToLibrary();
+  const removeFromWishlist = useRemoveFromWishlist();
 
   const handlePlay = async (gameId: string, gameTitle: string) => {
     const success = await setPlaying(gameId);
@@ -233,6 +365,14 @@ export const LibrarySection = () => {
     }
   };
 
+  const handleAddWishlistToLibrary = (gameId: string) => {
+    addToLibrary.mutate(gameId, {
+      onSuccess: () => {
+        removeFromWishlist.mutate(gameId);
+      }
+    });
+  };
+
   const filteredLibrary = library.filter((entry) => {
     const matchesFilter = 
       filter === "all" || 
@@ -242,10 +382,16 @@ export const LibrarySection = () => {
     return matchesFilter && matchesSearch;
   });
 
+  const filteredWishlist = (wishlist as WishlistGame[]).filter((item) => {
+    if (!item.game) return false;
+    return item.game.title.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   const filterOptions: { id: FilterType; label: string; icon: React.ComponentType<{ className?: string }>; count: number }[] = [
     { id: "all", label: "All Games", icon: Grid, count: library.length },
     { id: "favorites", label: "Favorites", icon: Heart, count: library.filter(e => e.is_favorite).length },
     { id: "recent", label: "Recently Played", icon: Clock, count: library.filter(e => e.last_played_at).length },
+    { id: "wishlist", label: "Wishlist", icon: Bookmark, count: wishlist.length },
   ];
 
   return (
@@ -255,7 +401,12 @@ export const LibrarySection = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold mb-1">My Library</h1>
-            <p className="text-muted-foreground">{filteredLibrary.length} games in your collection</p>
+            <p className="text-muted-foreground">
+              {filter === "wishlist" 
+                ? `${filteredWishlist.length} games in your wishlist`
+                : `${filteredLibrary.length} games in your collection`
+              }
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -264,7 +415,7 @@ export const LibrarySection = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search library..."
+                placeholder={filter === "wishlist" ? "Search wishlist..." : "Search library..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-64 h-10 pl-10 pr-4 bg-secondary/50 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all"
@@ -326,54 +477,110 @@ export const LibrarySection = () => {
 
       {/* Games Grid/List */}
       <div className="flex-1 overflow-y-auto scrollbar-gaming p-6">
-        {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
-            ))}
-          </div>
-        ) : view === "grid" ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-            {filteredLibrary.map((entry) => (
-              <LibraryGameCard 
-                key={entry.id} 
-                entry={entry} 
-                variant="grid"
-                isPlaying={currentlyPlayingGameId === entry.game_id}
-                onPlay={() => handlePlay(entry.game_id, entry.game.title)}
-                onStop={handleStop}
-                onClick={() => navigate(`/game/${entry.game_id}`)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredLibrary.map((entry) => (
-              <LibraryGameCard 
-                key={entry.id} 
-                entry={entry} 
-                variant="list"
-                isPlaying={currentlyPlayingGameId === entry.game_id}
-                onPlay={() => handlePlay(entry.game_id, entry.game.title)}
-                onStop={handleStop}
-                onClick={() => navigate(`/game/${entry.game_id}`)}
-              />
-            ))}
-          </div>
-        )}
+        {filter === "wishlist" ? (
+          // Wishlist View
+          <>
+            {isLoadingWishlist ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+                ))}
+              </div>
+            ) : view === "grid" ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                {filteredWishlist.map((item) => (
+                  <WishlistGameCard 
+                    key={item.id} 
+                    item={item} 
+                    variant="grid"
+                    onClick={() => navigate(`/game/${item.game?.id}`)}
+                    onAddToLibrary={() => item.game && handleAddWishlistToLibrary(item.game.id)}
+                    onRemove={() => item.game && removeFromWishlist.mutate(item.game.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredWishlist.map((item) => (
+                  <WishlistGameCard 
+                    key={item.id} 
+                    item={item} 
+                    variant="list"
+                    onClick={() => navigate(`/game/${item.game?.id}`)}
+                    onAddToLibrary={() => item.game && handleAddWishlistToLibrary(item.game.id)}
+                    onRemove={() => item.game && removeFromWishlist.mutate(item.game.id)}
+                  />
+                ))}
+              </div>
+            )}
 
-        {!isLoading && filteredLibrary.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <Search className="w-12 h-12 mb-4 opacity-50" />
-            <p className="text-lg font-medium">
-              {library.length === 0 ? "Your library is empty" : "No games found"}
-            </p>
-            <p className="text-sm">
-              {library.length === 0 
-                ? "Visit the store to add games to your library" 
-                : "Try adjusting your search or filters"}
-            </p>
-          </div>
+            {!isLoadingWishlist && filteredWishlist.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                <Bookmark className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium">
+                  {wishlist.length === 0 ? "Your wishlist is empty" : "No games found"}
+                </p>
+                <p className="text-sm">
+                  {wishlist.length === 0 
+                    ? "Browse the store and add games to your wishlist" 
+                    : "Try adjusting your search"}
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          // Library View
+          <>
+            {isLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+                ))}
+              </div>
+            ) : view === "grid" ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                {filteredLibrary.map((entry) => (
+                  <LibraryGameCard 
+                    key={entry.id} 
+                    entry={entry} 
+                    variant="grid"
+                    isPlaying={currentlyPlayingGameId === entry.game_id}
+                    onPlay={() => handlePlay(entry.game_id, entry.game.title)}
+                    onStop={handleStop}
+                    onClick={() => navigate(`/game/${entry.game_id}`)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredLibrary.map((entry) => (
+                  <LibraryGameCard 
+                    key={entry.id} 
+                    entry={entry} 
+                    variant="list"
+                    isPlaying={currentlyPlayingGameId === entry.game_id}
+                    onPlay={() => handlePlay(entry.game_id, entry.game.title)}
+                    onStop={handleStop}
+                    onClick={() => navigate(`/game/${entry.game_id}`)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!isLoading && filteredLibrary.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                <Search className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium">
+                  {library.length === 0 ? "Your library is empty" : "No games found"}
+                </p>
+                <p className="text-sm">
+                  {library.length === 0 
+                    ? "Visit the store to add games to your library" 
+                    : "Try adjusting your search or filters"}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
