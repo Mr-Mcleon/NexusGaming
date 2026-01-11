@@ -34,6 +34,11 @@ const StoreGameCard = ({
   isAdding: boolean;
   isTogglingWishlist: boolean;
 }) => {
+  const isOnSale = game.sale_price !== null && game.sale_price < (game.price ?? 0);
+  const discountPercent = isOnSale 
+    ? Math.round(((game.price! - game.sale_price!) / game.price!) * 100)
+    : 0;
+
   return (
     <div className="group glass-card rounded-xl overflow-hidden hover:scale-[1.02] transition-all duration-300 cursor-pointer">
       <div className="relative aspect-[3/4] overflow-hidden">
@@ -42,11 +47,18 @@ const StoreGameCard = ({
           alt={game.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
-        {game.price === 0 && (
-          <div className="absolute top-2 left-2 px-2 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full">
-            FREE
-          </div>
-        )}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {game.price === 0 && (
+            <div className="px-2 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full">
+              FREE
+            </div>
+          )}
+          {isOnSale && (
+            <div className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+              -{discountPercent}%
+            </div>
+          )}
+        </div>
         <div className="absolute top-2 right-2 flex flex-col gap-1">
           {isOwned && (
             <div className="px-2 py-1 bg-online/90 text-white text-xs font-bold rounded-full flex items-center gap-1">
@@ -89,9 +101,18 @@ const StoreGameCard = ({
               </div>
             )}
           </div>
-          <span className="font-bold text-primary">
-            {game.price === 0 ? "Free" : `$${game.price}`}
-          </span>
+          <div className="flex items-center gap-2">
+            {isOnSale ? (
+              <>
+                <span className="text-sm text-muted-foreground line-through">${game.price}</span>
+                <span className="font-bold text-green-500">${game.sale_price}</span>
+              </>
+            ) : (
+              <span className="font-bold text-primary">
+                {game.price === 0 ? "Free" : `$${game.price}`}
+              </span>
+            )}
+          </div>
         </div>
         <div className="mt-3">
           {isOwned ? (
@@ -188,9 +209,19 @@ export const StoreSection = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-3xl font-bold text-primary">
-                {featuredGame.price === 0 ? "Free to Play" : `$${featuredGame.price}`}
-              </span>
+              {featuredGame.sale_price !== null && featuredGame.sale_price < (featuredGame.price ?? 0) ? (
+                <>
+                  <span className="text-xl text-muted-foreground line-through">${featuredGame.price}</span>
+                  <span className="text-3xl font-bold text-green-500">${featuredGame.sale_price}</span>
+                  <span className="px-2 py-1 bg-green-500 text-white text-sm font-bold rounded-full">
+                    -{Math.round(((featuredGame.price! - featuredGame.sale_price!) / featuredGame.price!) * 100)}%
+                  </span>
+                </>
+              ) : (
+                <span className="text-3xl font-bold text-primary">
+                  {featuredGame.price === 0 ? "Free to Play" : `$${featuredGame.price}`}
+                </span>
+              )}
               {ownedGameIds.has(featuredGame.id) ? (
                 <Button variant="glass" size="xl" disabled>
                   <Check className="w-5 h-5 mr-2" />

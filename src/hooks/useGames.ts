@@ -14,6 +14,7 @@ export interface Game {
   genres: string[] | null;
   tags: string[] | null;
   price: number | null;
+  sale_price: number | null;
   rating: number | null;
   created_at: string;
 }
