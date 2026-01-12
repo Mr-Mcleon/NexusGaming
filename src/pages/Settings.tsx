@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Bell, Camera, Loader2, Save, User, Volume2, ShieldOff, UserX } from "lucide-react";
+import { ArrowLeft, Bell, Camera, Loader2, Mail, Save, User, Volume2, ShieldOff, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useBlockedUsers, useUnblockUser } from "@/hooks/useBlockedUsers";
+import { useEmailPreferences } from "@/hooks/useEmailPreferences";
 import { useQuery } from "@tanstack/react-query";
 
 interface Profile {
@@ -24,6 +25,7 @@ export default function Settings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { soundEnabled, desktopEnabled, setSoundEnabled, setDesktopEnabled } = useNotificationSettings();
+  const { saleEmailEnabled, setSaleEmailEnabled, isPending: emailPending } = useEmailPreferences();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(true);
@@ -317,6 +319,24 @@ export default function Settings() {
                 id="desktop-toggle"
                 checked={desktopEnabled}
                 onCheckedChange={setDesktopEnabled}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <Label htmlFor="email-toggle" className="cursor-pointer">Sale Email Notifications</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Receive emails when wishlisted games go on sale
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="email-toggle"
+                checked={saleEmailEnabled}
+                onCheckedChange={setSaleEmailEnabled}
+                disabled={emailPending}
               />
             </div>
           </div>

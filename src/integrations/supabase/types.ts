@@ -340,6 +340,7 @@ export type Database = {
           created_at: string
           currently_playing_game_id: string | null
           id: string
+          sale_email_notifications: boolean
           updated_at: string
           user_id: string
           username: string | null
@@ -350,6 +351,7 @@ export type Database = {
           created_at?: string
           currently_playing_game_id?: string | null
           id?: string
+          sale_email_notifications?: boolean
           updated_at?: string
           user_id: string
           username?: string | null
@@ -360,6 +362,7 @@ export type Database = {
           created_at?: string
           currently_playing_game_id?: string | null
           id?: string
+          sale_email_notifications?: boolean
           updated_at?: string
           user_id?: string
           username?: string | null
