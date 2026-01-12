@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
@@ -189,6 +189,7 @@ interface WishlistGame {
     description: string | null;
     cover_image_url: string | null;
     price: number | null;
+    sale_price: number | null;
     rating: number | null;
     genres: string[] | null;
   } | null;
@@ -209,25 +210,58 @@ const WishlistGameCard = ({
 }) => {
   if (!item.game) return null;
 
+  const isOnSale = item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
+  const discountPercent = isOnSale && item.game.price 
+    ? Math.round(((item.game.price - item.game.sale_price!) / item.game.price) * 100)
+    : 0;
+
+  const renderPrice = () => {
+    if (item.game!.price === 0 || item.game!.price === null) {
+      return <span className="text-primary font-semibold">Free</span>;
+    }
+    if (isOnSale) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-xs font-bold rounded">
+            -{discountPercent}%
+          </span>
+          <span className="text-muted-foreground line-through text-sm">
+            ${item.game!.price.toFixed(2)}
+          </span>
+          <span className="text-green-400 font-semibold">
+            ${item.game!.sale_price!.toFixed(2)}
+          </span>
+        </div>
+      );
+    }
+    return <span className="text-primary font-semibold">${item.game!.price.toFixed(2)}</span>;
+  };
+
   if (variant === "list") {
     return (
       <div onClick={onClick} className="group glass-card rounded-xl p-4 flex items-center gap-4 hover:bg-secondary/50 transition-all duration-200 cursor-pointer">
-        <div className="w-20 h-28 rounded-lg overflow-hidden flex-shrink-0">
+        <div className="relative w-20 h-28 rounded-lg overflow-hidden flex-shrink-0">
           <img
             src={item.game.cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=200"}
             alt={item.game.title}
             className="w-full h-full object-cover"
           />
+          {isOnSale && (
+            <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-green-500 text-white text-xs font-bold rounded">
+              -{discountPercent}%
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-lg truncate">{item.game.title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-lg truncate">{item.game.title}</h3>
+            {isOnSale && (
+              <Tag className="w-4 h-4 text-green-400" />
+            )}
+          </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{item.game.description}</p>
           <div className="flex items-center gap-4 mt-2">
-            {item.game.price !== null && (
-              <span className="text-primary font-semibold">
-                {item.game.price === 0 ? "Free" : `$${item.game.price.toFixed(2)}`}
-              </span>
-            )}
+            {renderPrice()}
             {item.game.genres?.slice(0, 2).map((genre) => (
               <span key={genre} className="px-2 py-0.5 bg-secondary text-xs rounded-full text-muted-foreground">
                 {genre}
@@ -265,6 +299,11 @@ const WishlistGameCard = ({
 
   return (
     <div onClick={onClick} className="group relative rounded-xl overflow-hidden bg-card border border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer">
+      {isOnSale && (
+        <div className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-green-500 text-white text-xs font-bold rounded">
+          -{discountPercent}% OFF
+        </div>
+      )}
       <div className="aspect-[3/4] overflow-hidden">
         <img
           src={item.game.cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400"}
@@ -287,9 +326,20 @@ const WishlistGameCard = ({
       <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-background/50 backdrop-blur-sm">
         <h3 className="font-medium text-sm truncate mb-1">{item.game.title}</h3>
         <div className="flex items-center justify-between">
-          <span className="text-primary font-semibold text-sm">
-            {item.game.price === 0 || item.game.price === null ? "Free" : `$${item.game.price.toFixed(2)}`}
-          </span>
+          {isOnSale ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground line-through text-xs">
+                ${item.game.price?.toFixed(2)}
+              </span>
+              <span className="text-green-400 font-semibold text-sm">
+                ${item.game.sale_price!.toFixed(2)}
+              </span>
+            </div>
+          ) : (
+            <span className="text-primary font-semibold text-sm">
+              {item.game.price === 0 || item.game.price === null ? "Free" : `$${item.game.price.toFixed(2)}`}
+            </span>
+          )}
           <Button 
             variant="gaming" 
             size="sm" 

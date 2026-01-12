@@ -50,6 +50,7 @@ export const useWishlistWithGames = () => {
             description,
             cover_image_url,
             price,
+            sale_price,
             rating,
             genres
           )
