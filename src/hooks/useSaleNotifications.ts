@@ -156,3 +156,26 @@ export const useSaleNotificationSubscription = () => {
     };
   }, [user, queryClient]);
 };
+
+// Hook to send email notification for a sale
+export const useSendSaleEmail = () => {
+  return useMutation({
+    mutationFn: async (params: {
+      user_id: string;
+      game_id: string;
+      game_title: string;
+      original_price: number;
+      sale_price: number;
+    }) => {
+      const response = await supabase.functions.invoke("send-sale-notification-email", {
+        body: params,
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      return response.data;
+    },
+  });
+};
