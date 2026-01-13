@@ -1,14 +1,17 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy, Bell, BellOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
 import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
 import { useLogActivity } from "@/hooks/useActivityFeed";
 import { useWishlistWithGames, useRemoveFromWishlist } from "@/hooks/useWishlist";
+import { usePriceAlerts, useSetPriceAlert, useRemovePriceAlert } from "@/hooks/usePriceAlerts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 
 type FilterType = "all" | "favorites" | "recent" | "wishlist";
 type ViewType = "grid" | "list";
@@ -201,14 +204,23 @@ const WishlistGameCard = ({
   variant = "grid",
   onClick,
   onAddToLibrary,
-  onRemove
+  onRemove,
+  priceAlert,
+  onSetPriceAlert,
+  onRemovePriceAlert
 }: { 
   item: WishlistGame; 
   variant?: "grid" | "list";
   onClick: () => void;
   onAddToLibrary: () => void;
   onRemove: () => void;
+  priceAlert?: { target_price: number; notified: boolean };
+  onSetPriceAlert: (price: number) => void;
+  onRemovePriceAlert: () => void;
 }) => {
+  const [alertPrice, setAlertPrice] = useState(priceAlert?.target_price?.toString() || "");
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+
   if (!item.game) return null;
 
   const isOnSale = item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
@@ -271,6 +283,81 @@ const WishlistGameCard = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Popover open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  priceAlert && "border-amber-500/50 text-amber-400"
+                )}
+              >
+                {priceAlert ? (
+                  <>
+                    <Bell className="w-4 h-4 mr-1 fill-current" />
+                    ${priceAlert.target_price.toFixed(2)}
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-4 h-4 mr-1" />
+                    Alert
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Price Alert</span>
+                  {priceAlert && (
+                    <button
+                      onClick={() => {
+                        onRemovePriceAlert();
+                        setIsAlertOpen(false);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Get notified when the price drops to your target
+                </p>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max={item.game?.price || 100}
+                      value={alertPrice}
+                      onChange={(e) => setAlertPrice(e.target.value)}
+                      className="pl-7"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      const price = parseFloat(alertPrice);
+                      if (price > 0) {
+                        onSetPriceAlert(price);
+                        setIsAlertOpen(false);
+                      }
+                    }}
+                  >
+                    Set
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Current: ${(item.game?.sale_price ?? item.game?.price ?? 0).toFixed(2)}
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button 
             variant="outline" 
             size="sm"
@@ -314,15 +401,77 @@ const WishlistGameCard = ({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
       
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="absolute top-2 right-2 p-2 rounded-lg backdrop-blur-sm transition-all bg-destructive/20 text-destructive"
-      >
-        <Heart className="w-4 h-4 fill-current" />
-      </button>
+      <div className="absolute top-2 right-2 flex gap-1">
+        <Popover open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+          <PopoverTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "p-2 rounded-lg backdrop-blur-sm transition-all",
+                priceAlert 
+                  ? "bg-amber-500/20 text-amber-400" 
+                  : "bg-background/50 text-muted-foreground opacity-0 group-hover:opacity-100"
+              )}
+            >
+              <Bell className={cn("w-4 h-4", priceAlert && "fill-current")} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Price Alert</span>
+                {priceAlert && (
+                  <button
+                    onClick={() => {
+                      onRemovePriceAlert();
+                      setIsAlertOpen(false);
+                    }}
+                    className="text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={alertPrice}
+                    onChange={(e) => setAlertPrice(e.target.value)}
+                    className="pl-6 h-8 text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+                <Button 
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    const price = parseFloat(alertPrice);
+                    if (price > 0) {
+                      onSetPriceAlert(price);
+                      setIsAlertOpen(false);
+                    }
+                  }}
+                >
+                  Set
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="p-2 rounded-lg backdrop-blur-sm transition-all bg-destructive/20 text-destructive"
+        >
+          <Heart className="w-4 h-4 fill-current" />
+        </button>
+      </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-background/50 backdrop-blur-sm">
         <h3 className="font-medium text-sm truncate mb-1">{item.game.title}</h3>
@@ -371,11 +520,18 @@ export const LibrarySection = () => {
   
   const { data: library = [], isLoading } = useUserLibrary();
   const { data: wishlist = [], isLoading: isLoadingWishlist } = useWishlistWithGames();
+  const { data: priceAlerts = [] } = usePriceAlerts();
   const { setPlaying, stopPlaying } = useSetPlayingStatus();
   const updatePlayTime = useUpdatePlayTime();
   const logActivity = useLogActivity();
   const addToLibrary = useAddToLibrary();
   const removeFromWishlist = useRemoveFromWishlist();
+  const setPriceAlert = useSetPriceAlert();
+  const removePriceAlert = useRemovePriceAlert();
+
+  const getPriceAlertForGame = (gameId: string) => {
+    return priceAlerts.find(alert => alert.game_id === gameId);
+  };
 
   const handlePlay = async (gameId: string, gameTitle: string) => {
     const success = await setPlaying(gameId);
@@ -720,29 +876,41 @@ export const LibrarySection = () => {
               </div>
             ) : view === "grid" ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                {filteredWishlist.map((item) => (
-                  <WishlistGameCard 
-                    key={item.id} 
-                    item={item} 
-                    variant="grid"
-                    onClick={() => navigate(`/game/${item.game?.id}`)}
-                    onAddToLibrary={() => item.game && handleAddWishlistToLibrary(item.game.id)}
-                    onRemove={() => item.game && removeFromWishlist.mutate(item.game.id)}
-                  />
-                ))}
+                {filteredWishlist.map((item) => {
+                  const alert = item.game ? getPriceAlertForGame(item.game.id) : undefined;
+                  return (
+                    <WishlistGameCard 
+                      key={item.id} 
+                      item={item} 
+                      variant="grid"
+                      onClick={() => navigate(`/game/${item.game?.id}`)}
+                      onAddToLibrary={() => item.game && handleAddWishlistToLibrary(item.game.id)}
+                      onRemove={() => item.game && removeFromWishlist.mutate(item.game.id)}
+                      priceAlert={alert ? { target_price: alert.target_price, notified: alert.notified } : undefined}
+                      onSetPriceAlert={(price) => item.game && setPriceAlert.mutate({ gameId: item.game.id, targetPrice: price })}
+                      onRemovePriceAlert={() => item.game && removePriceAlert.mutate(item.game.id)}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredWishlist.map((item) => (
-                  <WishlistGameCard 
-                    key={item.id} 
-                    item={item} 
-                    variant="list"
-                    onClick={() => navigate(`/game/${item.game?.id}`)}
-                    onAddToLibrary={() => item.game && handleAddWishlistToLibrary(item.game.id)}
-                    onRemove={() => item.game && removeFromWishlist.mutate(item.game.id)}
-                  />
-                ))}
+                {filteredWishlist.map((item) => {
+                  const alert = item.game ? getPriceAlertForGame(item.game.id) : undefined;
+                  return (
+                    <WishlistGameCard 
+                      key={item.id} 
+                      item={item} 
+                      variant="list"
+                      onClick={() => navigate(`/game/${item.game?.id}`)}
+                      onAddToLibrary={() => item.game && handleAddWishlistToLibrary(item.game.id)}
+                      onRemove={() => item.game && removeFromWishlist.mutate(item.game.id)}
+                      priceAlert={alert ? { target_price: alert.target_price, notified: alert.notified } : undefined}
+                      onSetPriceAlert={(price) => item.game && setPriceAlert.mutate({ gameId: item.game.id, targetPrice: price })}
+                      onRemovePriceAlert={() => item.game && removePriceAlert.mutate(item.game.id)}
+                    />
+                  );
+                })}
               </div>
             )}
 
