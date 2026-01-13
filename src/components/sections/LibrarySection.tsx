@@ -363,6 +363,7 @@ export const LibrarySection = () => {
   const [filter, setFilter] = useState<FilterType>("all");
   const [view, setView] = useState<ViewType>("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showOnSaleOnly, setShowOnSaleOnly] = useState(false);
   const [currentlyPlayingGameId, setCurrentlyPlayingGameId] = useState<string | null>(null);
   const playStartTimeRef = useRef<number | null>(null);
   
@@ -434,8 +435,16 @@ export const LibrarySection = () => {
 
   const filteredWishlist = (wishlist as WishlistGame[]).filter((item) => {
     if (!item.game) return false;
-    return item.game.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = item.game.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const isOnSale = item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
+    const matchesSaleFilter = !showOnSaleOnly || isOnSale;
+    return matchesSearch && matchesSaleFilter;
   });
+
+  const onSaleCount = (wishlist as WishlistGame[]).filter((item) => {
+    if (!item.game) return false;
+    return item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
+  }).length;
 
   const filterOptions: { id: FilterType; label: string; icon: React.ComponentType<{ className?: string }>; count: number }[] = [
     { id: "all", label: "All Games", icon: Grid, count: library.length },
@@ -460,6 +469,28 @@ export const LibrarySection = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* On Sale Filter - Only show for wishlist */}
+            {filter === "wishlist" && onSaleCount > 0 && (
+              <button
+                onClick={() => setShowOnSaleOnly(!showOnSaleOnly)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 border",
+                  showOnSaleOnly
+                    ? "bg-green-500/20 text-green-400 border-green-500/50"
+                    : "bg-secondary/50 text-muted-foreground border-border/50 hover:text-foreground hover:border-border"
+                )}
+              >
+                <Tag className="w-4 h-4" />
+                <span className="font-medium text-sm">On Sale</span>
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded-full text-xs",
+                  showOnSaleOnly ? "bg-green-500/30 text-green-400" : "bg-muted text-muted-foreground"
+                )}>
+                  {onSaleCount}
+                </span>
+              </button>
+            )}
+
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
