@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
@@ -551,6 +551,93 @@ export const LibrarySection = () => {
                       {option.label}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Export Dropdown - Only show for wishlist */}
+            {filter === "wishlist" && filteredWishlist.length > 0 && (
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-3 py-2 bg-secondary/50 border border-border/50 rounded-lg text-muted-foreground hover:text-foreground hover:border-border transition-all">
+                  <Share2 className="w-4 h-4" />
+                  <span className="font-medium text-sm">Export</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <button
+                    onClick={() => {
+                      const data = filteredWishlist.map(item => ({
+                        title: item.game?.title,
+                        price: item.game?.price,
+                        salePrice: item.game?.sale_price,
+                        genres: item.game?.genres,
+                        addedAt: item.added_at
+                      }));
+                      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'wishlist.json';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success('Wishlist exported as JSON');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors rounded-t-lg"
+                  >
+                    <FileJson className="w-4 h-4" />
+                    Download JSON
+                  </button>
+                  <button
+                    onClick={() => {
+                      const headers = ['Title', 'Price', 'Sale Price', 'Discount %', 'Genres', 'Added At'];
+                      const rows = filteredWishlist.map(item => {
+                        const price = item.game?.price || 0;
+                        const salePrice = item.game?.sale_price;
+                        const discount = salePrice !== null && price > 0 
+                          ? Math.round(((price - salePrice) / price) * 100) 
+                          : 0;
+                        return [
+                          `"${item.game?.title || ''}"`,
+                          price.toFixed(2),
+                          salePrice !== null ? salePrice.toFixed(2) : '',
+                          discount > 0 ? `${discount}%` : '',
+                          `"${item.game?.genres?.join(', ') || ''}"`,
+                          new Date(item.added_at).toLocaleDateString()
+                        ].join(',');
+                      });
+                      const csv = [headers.join(','), ...rows].join('\n');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'wishlist.csv';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      toast.success('Wishlist exported as CSV');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                  >
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Download CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      const text = filteredWishlist.map(item => {
+                        const price = item.game?.price || 0;
+                        const salePrice = item.game?.sale_price;
+                        const priceText = salePrice !== null 
+                          ? `$${salePrice.toFixed(2)} (was $${price.toFixed(2)})`
+                          : `$${price.toFixed(2)}`;
+                        return `• ${item.game?.title} - ${priceText}`;
+                      }).join('\n');
+                      navigator.clipboard.writeText(text);
+                      toast.success('Wishlist copied to clipboard');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors rounded-b-lg"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy to Clipboard
+                  </button>
                 </div>
               </div>
             )}
