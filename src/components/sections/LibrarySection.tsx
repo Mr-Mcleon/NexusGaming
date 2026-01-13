@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 type FilterType = "all" | "favorites" | "recent" | "wishlist";
 type ViewType = "grid" | "list";
+type WishlistSortType = "date_added" | "price_low" | "price_high" | "discount";
 
 const formatPlayTime = (minutes: number) => {
   if (minutes < 60) return `${minutes}m`;
@@ -364,6 +365,7 @@ export const LibrarySection = () => {
   const [view, setView] = useState<ViewType>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [showOnSaleOnly, setShowOnSaleOnly] = useState(false);
+  const [wishlistSort, setWishlistSort] = useState<WishlistSortType>("date_added");
   const [currentlyPlayingGameId, setCurrentlyPlayingGameId] = useState<string | null>(null);
   const playStartTimeRef = useRef<number | null>(null);
   
@@ -433,18 +435,51 @@ export const LibrarySection = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const filteredWishlist = (wishlist as WishlistGame[]).filter((item) => {
-    if (!item.game) return false;
-    const matchesSearch = item.game.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const isOnSale = item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
-    const matchesSaleFilter = !showOnSaleOnly || isOnSale;
-    return matchesSearch && matchesSaleFilter;
-  });
+  const filteredWishlist = (wishlist as WishlistGame[])
+    .filter((item) => {
+      if (!item.game) return false;
+      const matchesSearch = item.game.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const isOnSale = item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
+      const matchesSaleFilter = !showOnSaleOnly || isOnSale;
+      return matchesSearch && matchesSaleFilter;
+    })
+    .sort((a, b) => {
+      if (!a.game || !b.game) return 0;
+      
+      const getEffectivePrice = (game: WishlistGame["game"]) => {
+        if (!game) return 0;
+        return game.sale_price !== null ? game.sale_price : (game.price || 0);
+      };
+      
+      const getDiscount = (game: WishlistGame["game"]) => {
+        if (!game || !game.price || game.sale_price === null) return 0;
+        return ((game.price - game.sale_price) / game.price) * 100;
+      };
+
+      switch (wishlistSort) {
+        case "price_low":
+          return getEffectivePrice(a.game) - getEffectivePrice(b.game);
+        case "price_high":
+          return getEffectivePrice(b.game) - getEffectivePrice(a.game);
+        case "discount":
+          return getDiscount(b.game) - getDiscount(a.game);
+        case "date_added":
+        default:
+          return new Date(b.added_at).getTime() - new Date(a.added_at).getTime();
+      }
+    });
 
   const onSaleCount = (wishlist as WishlistGame[]).filter((item) => {
     if (!item.game) return false;
     return item.game.sale_price !== null && item.game.sale_price < (item.game.price || 0);
   }).length;
+
+  const sortOptions: { id: WishlistSortType; label: string }[] = [
+    { id: "date_added", label: "Date Added" },
+    { id: "price_low", label: "Price: Low to High" },
+    { id: "price_high", label: "Price: High to Low" },
+    { id: "discount", label: "Discount %" },
+  ];
 
   const filterOptions: { id: FilterType; label: string; icon: React.ComponentType<{ className?: string }>; count: number }[] = [
     { id: "all", label: "All Games", icon: Grid, count: library.length },
@@ -489,6 +524,32 @@ export const LibrarySection = () => {
                   {onSaleCount}
                 </span>
               </button>
+            )}
+            {/* Sort Dropdown - Only show for wishlist */}
+            {filter === "wishlist" && (
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-3 py-2 bg-secondary/50 border border-border/50 rounded-lg text-muted-foreground hover:text-foreground hover:border-border transition-all">
+                  <ArrowUpDown className="w-4 h-4" />
+                  <span className="font-medium text-sm">{sortOptions.find(o => o.id === wishlistSort)?.label}</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setWishlistSort(option.id)}
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg",
+                        wishlistSort === option.id
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Search */}
