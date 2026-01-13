@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 type FilterType = "all" | "favorites" | "recent" | "wishlist";
 type ViewType = "grid" | "list";
-type WishlistSortType = "date_added" | "price_low" | "price_high" | "discount";
+type WishlistSortType = "date_added" | "name" | "price_low" | "price_high" | "discount";
 
 const formatPlayTime = (minutes: number) => {
   if (minutes < 60) return `${minutes}m`;
@@ -457,6 +457,8 @@ export const LibrarySection = () => {
       };
 
       switch (wishlistSort) {
+        case "name":
+          return a.game.title.localeCompare(b.game.title);
         case "price_low":
           return getEffectivePrice(a.game) - getEffectivePrice(b.game);
         case "price_high":
@@ -476,6 +478,7 @@ export const LibrarySection = () => {
 
   const sortOptions: { id: WishlistSortType; label: string }[] = [
     { id: "date_added", label: "Date Added" },
+    { id: "name", label: "Name (A-Z)" },
     { id: "price_low", label: "Price: Low to High" },
     { id: "price_high", label: "Price: High to Low" },
     { id: "discount", label: "Discount %" },
