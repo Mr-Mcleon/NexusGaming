@@ -543,6 +543,41 @@ export type Database = {
           },
         ]
       }
+      wishlist_price_alerts: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          notified: boolean
+          target_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          notified?: boolean
+          target_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          notified?: boolean
+          target_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_price_alerts_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
