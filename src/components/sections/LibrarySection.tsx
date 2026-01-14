@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy, Bell, BellOff, X } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy, Bell, BellOff, X, Link, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
@@ -8,6 +8,8 @@ import { useSetPlayingStatus } from "@/hooks/usePlayingStatus";
 import { useLogActivity } from "@/hooks/useActivityFeed";
 import { useWishlistWithGames, useRemoveFromWishlist } from "@/hooks/useWishlist";
 import { usePriceAlerts, useSetPriceAlert, useRemovePriceAlert } from "@/hooks/usePriceAlerts";
+import { useWishlistShare, useCreateWishlistShare, useToggleWishlistShare, useRegenerateShareToken } from "@/hooks/useWishlistShare";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -528,9 +530,33 @@ export const LibrarySection = () => {
   const removeFromWishlist = useRemoveFromWishlist();
   const setPriceAlert = useSetPriceAlert();
   const removePriceAlert = useRemovePriceAlert();
+  const { data: wishlistShare } = useWishlistShare();
+  const createWishlistShare = useCreateWishlistShare();
+  const toggleWishlistShare = useToggleWishlistShare();
+  const regenerateShareToken = useRegenerateShareToken();
+  const [copied, setCopied] = useState(false);
 
   const getPriceAlertForGame = (gameId: string) => {
     return priceAlerts.find(alert => alert.game_id === gameId);
+  };
+
+  const getShareUrl = () => {
+    if (!wishlistShare?.share_token) return "";
+    return `${window.location.origin}/wishlist/${wishlistShare.share_token}`;
+  };
+
+  const handleCopyShareLink = async () => {
+    const url = getShareUrl();
+    if (url) {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Share link copied!");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCreateShare = async () => {
+    await createWishlistShare.mutateAsync();
   };
 
   const handlePlay = async (gameId: string, gameTitle: string) => {
@@ -709,6 +735,84 @@ export const LibrarySection = () => {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Share Button - Only show for wishlist */}
+            {filter === "wishlist" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={cn(
+                      "gap-2",
+                      wishlistShare?.is_active && "border-primary/50 text-primary"
+                    )}
+                  >
+                    <Link className="w-4 h-4" />
+                    Share
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">Share Wishlist</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Let others view your wishlist
+                        </p>
+                      </div>
+                      {wishlistShare && (
+                        <Switch
+                          checked={wishlistShare.is_active}
+                          onCheckedChange={(checked) => toggleWishlistShare.mutate(checked)}
+                        />
+                      )}
+                    </div>
+                    
+                    {!wishlistShare ? (
+                      <Button 
+                        onClick={handleCreateShare} 
+                        className="w-full"
+                        disabled={createWishlistShare.isPending}
+                      >
+                        {createWishlistShare.isPending ? "Creating..." : "Create Share Link"}
+                      </Button>
+                    ) : (
+                      <>
+                        <div className="flex gap-2">
+                          <Input
+                            readOnly
+                            value={getShareUrl()}
+                            className="text-xs bg-secondary/50"
+                          />
+                          <Button 
+                            size="icon" 
+                            variant="outline"
+                            onClick={handleCopyShareLink}
+                          >
+                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                          <span className="text-xs text-muted-foreground">
+                            Generate new link
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => regenerateShareToken.mutate()}
+                            disabled={regenerateShareToken.isPending}
+                          >
+                            <RefreshCw className={cn("w-4 h-4 mr-1", regenerateShareToken.isPending && "animate-spin")} />
+                            Regenerate
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
 
             {/* Export Dropdown - Only show for wishlist */}

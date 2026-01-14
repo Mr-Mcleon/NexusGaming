@@ -578,12 +578,54 @@ export type Database = {
           },
         ]
       }
+      wishlist_shares: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          share_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          share_token?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          share_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_shared_wishlist: {
+        Args: { p_token: string }
+        Returns: {
+          added_at: string
+          game_cover_image_url: string
+          game_description: string
+          game_genres: string[]
+          game_id: string
+          game_price: number
+          game_rating: number
+          game_sale_price: number
+          game_title: string
+          id: string
+          owner_username: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
