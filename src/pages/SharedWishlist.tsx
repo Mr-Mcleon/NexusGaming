@@ -1,9 +1,35 @@
 import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
 import { useSharedWishlist } from "@/hooks/useWishlistShare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, User } from "lucide-react";
 import { toast } from "sonner";
+
+// Helper to update Open Graph meta tags
+const updateMetaTags = (tags: Record<string, string>) => {
+  Object.entries(tags).forEach(([property, content]) => {
+    let element = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+    if (!element) {
+      element = document.createElement("meta");
+      element.setAttribute("property", property);
+      document.head.appendChild(element);
+    }
+    element.setAttribute("content", content);
+  });
+};
+
+const updateTwitterTags = (tags: Record<string, string>) => {
+  Object.entries(tags).forEach(([name, content]) => {
+    let element = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+    if (!element) {
+      element = document.createElement("meta");
+      element.setAttribute("name", name);
+      document.head.appendChild(element);
+    }
+    element.setAttribute("content", content);
+  });
+};
 
 // Social media brand icons as simple SVG components
 const TwitterIcon = ({ className }: { className?: string }) => (
@@ -38,7 +64,48 @@ const SharedWishlist = () => {
   const ownerUsername = wishlist?.[0]?.owner_username || "Anonymous";
   const gameCount = wishlist?.length || 0;
   const shareText = `Check out ${ownerUsername}'s gaming wishlist with ${gameCount} games!`;
-
+  
+  // Calculate total value and savings for meta description
+  const totalValue = wishlist?.reduce((sum, item) => sum + (item.game_price || 0), 0) || 0;
+  const totalSaleValue = wishlist?.reduce((sum, item) => sum + (item.game_sale_price ?? item.game_price ?? 0), 0) || 0;
+  const totalSavings = totalValue - totalSaleValue;
+  
+  // Get first game cover for OG image
+  const ogImage = wishlist?.[0]?.game_cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200";
+  
+  // Update Open Graph meta tags when wishlist data is available
+  useEffect(() => {
+    if (wishlist && wishlist.length > 0) {
+      const title = `${ownerUsername}'s Gaming Wishlist`;
+      const description = `${gameCount} games on their wishlist worth $${totalValue.toFixed(2)}${totalSavings > 0 ? ` - Save $${totalSavings.toFixed(2)} with current sales!` : ""}. Games include: ${wishlist.slice(0, 3).map(g => g.game_title).join(", ")}${wishlist.length > 3 ? "..." : ""}`;
+      
+      // Update page title
+      document.title = title;
+      
+      // Update Open Graph tags
+      updateMetaTags({
+        "og:title": title,
+        "og:description": description,
+        "og:image": ogImage,
+        "og:url": currentUrl,
+        "og:type": "website",
+        "og:site_name": "GameVault",
+      });
+      
+      // Update Twitter Card tags
+      updateTwitterTags({
+        "twitter:card": "summary_large_image",
+        "twitter:title": title,
+        "twitter:description": description,
+        "twitter:image": ogImage,
+      });
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.title = "GameVault";
+    };
+  }, [wishlist, ownerUsername, gameCount, totalValue, totalSavings, ogImage, currentUrl]);
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(currentUrl)}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
