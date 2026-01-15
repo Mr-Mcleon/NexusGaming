@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useSharedWishlist } from "@/hooks/useWishlistShare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2, ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2, ArrowUpDown, ChevronDown, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useMemo } from "react";
 import {
   DropdownMenu,
@@ -74,6 +75,7 @@ const SharedWishlist = () => {
   const gameCount = wishlist?.length || 0;
   const shareText = `Check out ${ownerUsername}'s gaming wishlist with ${gameCount} games!`;
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Calculate statistics
   const stats = useMemo(() => {
@@ -104,11 +106,20 @@ const SharedWishlist = () => {
   
   const { totalValue, totalSavings, gamesOnSale, genreBreakdown } = stats;
 
-  // Sort wishlist based on selected option
-  const sortedWishlist = useMemo(() => {
+  // Filter and sort wishlist based on search and sort options
+  const filteredAndSortedWishlist = useMemo(() => {
     if (!wishlist) return [];
     
-    return [...wishlist].sort((a, b) => {
+    // First filter by search query
+    const filtered = searchQuery.trim()
+      ? wishlist.filter(item => 
+          item.game_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.game_genres?.some(genre => genre.toLowerCase().includes(searchQuery.toLowerCase()))
+        )
+      : wishlist;
+    
+    // Then sort
+    return [...filtered].sort((a, b) => {
       const aPrice = a.game_sale_price ?? a.game_price ?? 0;
       const bPrice = b.game_sale_price ?? b.game_price ?? 0;
       const aDiscount = a.game_price && a.game_sale_price !== null && a.game_sale_price < a.game_price
@@ -133,7 +144,7 @@ const SharedWishlist = () => {
           return 0;
       }
     });
-  }, [wishlist, sortOption]);
+  }, [wishlist, sortOption, searchQuery]);
 
   const sortLabels: Record<SortOption, string> = {
     "name-asc": "Name (A-Z)",
@@ -356,45 +367,77 @@ const SharedWishlist = () => {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-6 pb-6">
-        {/* Sort Controls */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-muted-foreground">
-            Showing {sortedWishlist.length} {sortedWishlist.length === 1 ? "game" : "games"}
-          </p>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <ArrowUpDown className="w-4 h-4" />
-                {sortLabels[sortOption]}
-                <ChevronDown className="w-3 h-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover z-50">
-              <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
-                Name (A-Z)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
-                Name (Z-A)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOption("price-low")}>
-                Price (Low to High)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOption("price-high")}>
-                Price (High to Low)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOption("discount")}>
-                Biggest Discount
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {/* Search and Sort Controls */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+          {/* Search Input */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search games or genres..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between sm:justify-end gap-3">
+            <p className="text-sm text-muted-foreground">
+              {filteredAndSortedWishlist.length} {filteredAndSortedWishlist.length === 1 ? "game" : "games"}
+              {searchQuery && ` found`}
+            </p>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <ArrowUpDown className="w-4 h-4" />
+                  <span className="hidden sm:inline">{sortLabels[sortOption]}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover z-50">
+                <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
+                  Name (A-Z)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
+                  Name (Z-A)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("price-low")}>
+                  Price (Low to High)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("price-high")}>
+                  Price (High to Low)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSortOption("discount")}>
+                  Biggest Discount
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {sortedWishlist.map((item) => {
-            const isOnSale = item.game_sale_price !== null && item.game_sale_price < (item.game_price || 0);
-            const discountPercent = isOnSale && item.game_price
-              ? Math.round(((item.game_price - item.game_sale_price!) / item.game_price) * 100)
-              : 0;
+        {filteredAndSortedWishlist.length === 0 && searchQuery ? (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No games found matching "{searchQuery}"</p>
+            <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")} className="mt-2">
+              Clear search
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredAndSortedWishlist.map((item) => {
+              const isOnSale = item.game_sale_price !== null && item.game_sale_price < (item.game_price || 0);
+              const discountPercent = isOnSale && item.game_price
+                ? Math.round(((item.game_price - item.game_sale_price!) / item.game_price) * 100)
+                : 0;
 
             return (
               <div
@@ -444,7 +487,8 @@ const SharedWishlist = () => {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
