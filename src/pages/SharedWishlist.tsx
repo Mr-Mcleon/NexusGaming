@@ -1,10 +1,18 @@
 import { useParams, Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSharedWishlist } from "@/hooks/useWishlistShare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2, ArrowUpDown, ChevronDown } from "lucide-react";
 import { useMemo } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type SortOption = "name-asc" | "name-desc" | "price-low" | "price-high" | "discount";
 import { toast } from "sonner";
 
 // Helper to update Open Graph meta tags
@@ -65,6 +73,7 @@ const SharedWishlist = () => {
   const ownerUsername = wishlist?.[0]?.owner_username || "Anonymous";
   const gameCount = wishlist?.length || 0;
   const shareText = `Check out ${ownerUsername}'s gaming wishlist with ${gameCount} games!`;
+  const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   
   // Calculate statistics
   const stats = useMemo(() => {
@@ -94,6 +103,45 @@ const SharedWishlist = () => {
   }, [wishlist]);
   
   const { totalValue, totalSavings, gamesOnSale, genreBreakdown } = stats;
+
+  // Sort wishlist based on selected option
+  const sortedWishlist = useMemo(() => {
+    if (!wishlist) return [];
+    
+    return [...wishlist].sort((a, b) => {
+      const aPrice = a.game_sale_price ?? a.game_price ?? 0;
+      const bPrice = b.game_sale_price ?? b.game_price ?? 0;
+      const aDiscount = a.game_price && a.game_sale_price !== null && a.game_sale_price < a.game_price
+        ? ((a.game_price - a.game_sale_price) / a.game_price) * 100
+        : 0;
+      const bDiscount = b.game_price && b.game_sale_price !== null && b.game_sale_price < b.game_price
+        ? ((b.game_price - b.game_sale_price) / b.game_price) * 100
+        : 0;
+      
+      switch (sortOption) {
+        case "name-asc":
+          return a.game_title.localeCompare(b.game_title);
+        case "name-desc":
+          return b.game_title.localeCompare(a.game_title);
+        case "price-low":
+          return aPrice - bPrice;
+        case "price-high":
+          return bPrice - aPrice;
+        case "discount":
+          return bDiscount - aDiscount;
+        default:
+          return 0;
+      }
+    });
+  }, [wishlist, sortOption]);
+
+  const sortLabels: Record<SortOption, string> = {
+    "name-asc": "Name (A-Z)",
+    "name-desc": "Name (Z-A)",
+    "price-low": "Price (Low to High)",
+    "price-high": "Price (High to Low)",
+    "discount": "Biggest Discount",
+  };
   
   // Get first game cover for OG image
   const ogImage = wishlist?.[0]?.game_cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200";
@@ -308,8 +356,41 @@ const SharedWishlist = () => {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-6 pb-6">
+        {/* Sort Controls */}
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-muted-foreground">
+            Showing {sortedWishlist.length} {sortedWishlist.length === 1 ? "game" : "games"}
+          </p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <ArrowUpDown className="w-4 h-4" />
+                {sortLabels[sortOption]}
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-popover z-50">
+              <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
+                Name (A-Z)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
+                Name (Z-A)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("price-low")}>
+                Price (Low to High)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("price-high")}>
+                Price (High to Low)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption("discount")}>
+                Biggest Discount
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {wishlist.map((item) => {
+          {sortedWishlist.map((item) => {
             const isOnSale = item.game_sale_price !== null && item.game_sale_price < (item.game_price || 0);
             const discountPercent = isOnSale && item.game_price
               ? Math.round(((item.game_price - item.game_sale_price!) / item.game_price) * 100)
