@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { useSharedWishlist } from "@/hooks/useWishlistShare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, User } from "lucide-react";
+import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2 } from "lucide-react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 // Helper to update Open Graph meta tags
@@ -65,10 +66,34 @@ const SharedWishlist = () => {
   const gameCount = wishlist?.length || 0;
   const shareText = `Check out ${ownerUsername}'s gaming wishlist with ${gameCount} games!`;
   
-  // Calculate total value and savings for meta description
-  const totalValue = wishlist?.reduce((sum, item) => sum + (item.game_price || 0), 0) || 0;
-  const totalSaleValue = wishlist?.reduce((sum, item) => sum + (item.game_sale_price ?? item.game_price ?? 0), 0) || 0;
-  const totalSavings = totalValue - totalSaleValue;
+  // Calculate statistics
+  const stats = useMemo(() => {
+    if (!wishlist || wishlist.length === 0) {
+      return { totalValue: 0, totalSaleValue: 0, totalSavings: 0, gamesOnSale: 0, genreBreakdown: [] };
+    }
+    
+    const totalValue = wishlist.reduce((sum, item) => sum + (item.game_price || 0), 0);
+    const totalSaleValue = wishlist.reduce((sum, item) => sum + (item.game_sale_price ?? item.game_price ?? 0), 0);
+    const totalSavings = totalValue - totalSaleValue;
+    const gamesOnSale = wishlist.filter(item => item.game_sale_price !== null && item.game_sale_price < (item.game_price || 0)).length;
+    
+    // Calculate genre breakdown
+    const genreCounts: Record<string, number> = {};
+    wishlist.forEach(item => {
+      item.game_genres?.forEach(genre => {
+        genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+      });
+    });
+    
+    const genreBreakdown = Object.entries(genreCounts)
+      .map(([genre, count]) => ({ genre, count, percentage: Math.round((count / wishlist.length) * 100) }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    
+    return { totalValue, totalSaleValue, totalSavings, gamesOnSale, genreBreakdown };
+  }, [wishlist]);
+  
+  const { totalValue, totalSavings, gamesOnSale, genreBreakdown } = stats;
   
   // Get first game cover for OG image
   const ogImage = wishlist?.[0]?.game_cover_image_url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200";
@@ -215,8 +240,74 @@ const SharedWishlist = () => {
         </div>
       </div>
 
+      {/* Statistics Section */}
+      <div className="max-w-6xl mx-auto px-6 pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* Total Value Card */}
+          <div className="rounded-xl bg-card border border-border/50 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <DollarSign className="w-5 h-5 text-primary" />
+              </div>
+              <span className="text-sm text-muted-foreground">Total Value</span>
+            </div>
+            <p className="text-2xl font-bold">${totalValue.toFixed(2)}</p>
+            {totalSavings > 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Current sale price: ${(totalValue - totalSavings).toFixed(2)}
+              </p>
+            )}
+          </div>
+          
+          {/* Potential Savings Card */}
+          <div className="rounded-xl bg-card border border-border/50 p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <TrendingDown className="w-5 h-5 text-green-500" />
+              </div>
+              <span className="text-sm text-muted-foreground">Potential Savings</span>
+            </div>
+            <p className="text-2xl font-bold text-green-500">
+              {totalSavings > 0 ? `-$${totalSavings.toFixed(2)}` : "$0.00"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {gamesOnSale} {gamesOnSale === 1 ? "game" : "games"} on sale
+            </p>
+          </div>
+          
+          {/* Genre Breakdown Card */}
+          <div className="rounded-xl bg-card border border-border/50 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-accent/50">
+                <Gamepad2 className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <span className="text-sm text-muted-foreground">Top Genres</span>
+            </div>
+            <div className="space-y-2">
+              {genreBreakdown.length > 0 ? (
+                genreBreakdown.slice(0, 3).map(({ genre, count, percentage }) => (
+                  <div key={genre} className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground min-w-[80px] text-right">
+                      {genre} ({count})
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground">No genre data</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto px-6 pb-6">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {wishlist.map((item) => {
             const isOnSale = item.game_sale_price !== null && item.game_sale_price < (item.game_price || 0);
