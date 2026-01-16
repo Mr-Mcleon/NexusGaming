@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationsDropdown } from "./NotificationsDropdown";
+import { ThemeSelector } from "@/components/ThemeSelector";
 import { toast } from "sonner";
 
 export const Header = () => {
@@ -49,6 +50,9 @@ export const Header = () => {
           <Wifi className="w-4 h-4 text-online" />
           <span className="text-sm text-muted-foreground">Online</span>
         </div>
+
+        {/* Theme Selector */}
+        <ThemeSelector />
 
         {/* Notifications */}
         <NotificationsDropdown />
