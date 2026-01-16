@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2, ArrowUpDown, ChevronDown, Search, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { useMemo } from "react";
 import {
   DropdownMenu,
@@ -77,17 +78,23 @@ const SharedWishlist = () => {
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
   
   // Calculate statistics
   const stats = useMemo(() => {
     if (!wishlist || wishlist.length === 0) {
-      return { totalValue: 0, totalSaleValue: 0, totalSavings: 0, gamesOnSale: 0, genreBreakdown: [], allGenres: [] as string[] };
+      return { totalValue: 0, totalSaleValue: 0, totalSavings: 0, gamesOnSale: 0, genreBreakdown: [], allGenres: [] as string[], minPrice: 0, maxPrice: 100 };
     }
     
     const totalValue = wishlist.reduce((sum, item) => sum + (item.game_price || 0), 0);
     const totalSaleValue = wishlist.reduce((sum, item) => sum + (item.game_sale_price ?? item.game_price ?? 0), 0);
     const totalSavings = totalValue - totalSaleValue;
     const gamesOnSale = wishlist.filter(item => item.game_sale_price !== null && item.game_sale_price < (item.game_price || 0)).length;
+    
+    // Calculate price range
+    const prices = wishlist.map(item => item.game_sale_price ?? item.game_price ?? 0);
+    const minPrice = Math.floor(Math.min(...prices));
+    const maxPrice = Math.ceil(Math.max(...prices));
     
     // Calculate genre breakdown
     const genreCounts: Record<string, number> = {};
@@ -105,12 +112,12 @@ const SharedWishlist = () => {
     // Get all unique genres sorted alphabetically
     const allGenres = Object.keys(genreCounts).sort();
     
-    return { totalValue, totalSaleValue, totalSavings, gamesOnSale, genreBreakdown, allGenres };
+    return { totalValue, totalSaleValue, totalSavings, gamesOnSale, genreBreakdown, allGenres, minPrice, maxPrice };
   }, [wishlist]);
   
-  const { totalValue, totalSavings, gamesOnSale, genreBreakdown, allGenres } = stats;
+  const { totalValue, totalSavings, gamesOnSale, genreBreakdown, allGenres, minPrice, maxPrice } = stats;
 
-  // Filter and sort wishlist based on search, genre filter, and sort options
+  // Filter and sort wishlist based on search, genre filter, price range, and sort options
   const filteredAndSortedWishlist = useMemo(() => {
     if (!wishlist) return [];
     
@@ -127,6 +134,14 @@ const SharedWishlist = () => {
       filtered = filtered.filter(item => 
         item.game_genres?.includes(selectedGenre)
       );
+    }
+    
+    // Then filter by price range
+    if (priceRange) {
+      filtered = filtered.filter(item => {
+        const effectivePrice = item.game_sale_price ?? item.game_price ?? 0;
+        return effectivePrice >= priceRange[0] && effectivePrice <= priceRange[1];
+      });
     }
     
     // Then sort
@@ -155,7 +170,10 @@ const SharedWishlist = () => {
           return 0;
       }
     });
-  }, [wishlist, sortOption, searchQuery, selectedGenre]);
+  }, [wishlist, sortOption, searchQuery, selectedGenre, priceRange]);
+  
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || selectedGenre || priceRange;
 
   const sortLabels: Record<SortOption, string> = {
     "name-asc": "Name (A-Z)",
@@ -400,10 +418,10 @@ const SharedWishlist = () => {
             )}
           </div>
           
-          <div className="flex items-center justify-between sm:justify-end gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
             <p className="text-sm text-muted-foreground">
               {filteredAndSortedWishlist.length} {filteredAndSortedWishlist.length === 1 ? "game" : "games"}
-              {(searchQuery || selectedGenre) && ` found`}
+              {hasActiveFilters && ` found`}
             </p>
             
             {/* Genre Filter Dropdown */}
@@ -457,13 +475,51 @@ const SharedWishlist = () => {
           </div>
         </div>
         
-        {filteredAndSortedWishlist.length === 0 && (searchQuery || selectedGenre) ? (
+        {/* Price Range Filter */}
+        {maxPrice > minPrice && (
+          <div className="mb-4 p-4 rounded-xl bg-card/50 border border-border/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Price Range</span>
+              </div>
+              {priceRange && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setPriceRange(null)}
+                  className="h-6 px-2 text-xs"
+                >
+                  Reset
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground min-w-[60px]">
+                ${priceRange ? priceRange[0] : minPrice}
+              </span>
+              <Slider
+                value={priceRange || [minPrice, maxPrice]}
+                onValueChange={(value) => setPriceRange(value as [number, number])}
+                min={minPrice}
+                max={maxPrice}
+                step={1}
+                className="flex-1"
+              />
+              <span className="text-sm text-muted-foreground min-w-[60px] text-right">
+                ${priceRange ? priceRange[1] : maxPrice}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {filteredAndSortedWishlist.length === 0 && hasActiveFilters ? (
           <div className="text-center py-12">
             <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
-              No games found{searchQuery && ` matching "${searchQuery}"`}{selectedGenre && ` in ${selectedGenre}`}
+              No games found{searchQuery && ` matching "${searchQuery}"`}{selectedGenre && ` in ${selectedGenre}`}{priceRange && ` between $${priceRange[0]} - $${priceRange[1]}`}
             </p>
-            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(""); setSelectedGenre(null); }} className="mt-2">
+            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(""); setSelectedGenre(null); setPriceRange(null); }} className="mt-2">
               Clear filters
             </Button>
           </div>
