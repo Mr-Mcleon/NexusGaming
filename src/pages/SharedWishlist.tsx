@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSharedWishlist } from "@/hooks/useWishlistShare";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2, ArrowUpDown, ChevronDown, Search, X } from "lucide-react";
+import { ArrowLeft, Heart, User, DollarSign, TrendingDown, Gamepad2, ArrowUpDown, ChevronDown, Search, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useMemo } from "react";
 import {
@@ -76,11 +76,12 @@ const SharedWishlist = () => {
   const shareText = `Check out ${ownerUsername}'s gaming wishlist with ${gameCount} games!`;
   const [sortOption, setSortOption] = useState<SortOption>("name-asc");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   
   // Calculate statistics
   const stats = useMemo(() => {
     if (!wishlist || wishlist.length === 0) {
-      return { totalValue: 0, totalSaleValue: 0, totalSavings: 0, gamesOnSale: 0, genreBreakdown: [] };
+      return { totalValue: 0, totalSaleValue: 0, totalSavings: 0, gamesOnSale: 0, genreBreakdown: [], allGenres: [] as string[] };
     }
     
     const totalValue = wishlist.reduce((sum, item) => sum + (item.game_price || 0), 0);
@@ -101,22 +102,32 @@ const SharedWishlist = () => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
     
-    return { totalValue, totalSaleValue, totalSavings, gamesOnSale, genreBreakdown };
+    // Get all unique genres sorted alphabetically
+    const allGenres = Object.keys(genreCounts).sort();
+    
+    return { totalValue, totalSaleValue, totalSavings, gamesOnSale, genreBreakdown, allGenres };
   }, [wishlist]);
   
-  const { totalValue, totalSavings, gamesOnSale, genreBreakdown } = stats;
+  const { totalValue, totalSavings, gamesOnSale, genreBreakdown, allGenres } = stats;
 
-  // Filter and sort wishlist based on search and sort options
+  // Filter and sort wishlist based on search, genre filter, and sort options
   const filteredAndSortedWishlist = useMemo(() => {
     if (!wishlist) return [];
     
     // First filter by search query
-    const filtered = searchQuery.trim()
+    let filtered = searchQuery.trim()
       ? wishlist.filter(item => 
           item.game_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           item.game_genres?.some(genre => genre.toLowerCase().includes(searchQuery.toLowerCase()))
         )
       : wishlist;
+    
+    // Then filter by selected genre
+    if (selectedGenre) {
+      filtered = filtered.filter(item => 
+        item.game_genres?.includes(selectedGenre)
+      );
+    }
     
     // Then sort
     return [...filtered].sort((a, b) => {
@@ -144,7 +155,7 @@ const SharedWishlist = () => {
           return 0;
       }
     });
-  }, [wishlist, sortOption, searchQuery]);
+  }, [wishlist, sortOption, searchQuery, selectedGenre]);
 
   const sortLabels: Record<SortOption, string> = {
     "name-asc": "Name (A-Z)",
@@ -392,8 +403,31 @@ const SharedWishlist = () => {
           <div className="flex items-center justify-between sm:justify-end gap-3">
             <p className="text-sm text-muted-foreground">
               {filteredAndSortedWishlist.length} {filteredAndSortedWishlist.length === 1 ? "game" : "games"}
-              {searchQuery && ` found`}
+              {(searchQuery || selectedGenre) && ` found`}
             </p>
+            
+            {/* Genre Filter Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className={`gap-2 ${selectedGenre ? 'border-primary text-primary' : ''}`}>
+                  <Filter className="w-4 h-4" />
+                  <span className="hidden sm:inline">{selectedGenre || "All Genres"}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover z-50 max-h-64 overflow-y-auto">
+                <DropdownMenuItem onClick={() => setSelectedGenre(null)}>
+                  All Genres
+                </DropdownMenuItem>
+                {allGenres.map(genre => (
+                  <DropdownMenuItem key={genre} onClick={() => setSelectedGenre(genre)}>
+                    {genre}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
@@ -423,12 +457,14 @@ const SharedWishlist = () => {
           </div>
         </div>
         
-        {filteredAndSortedWishlist.length === 0 && searchQuery ? (
+        {filteredAndSortedWishlist.length === 0 && (searchQuery || selectedGenre) ? (
           <div className="text-center py-12">
             <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No games found matching "{searchQuery}"</p>
-            <Button variant="ghost" size="sm" onClick={() => setSearchQuery("")} className="mt-2">
-              Clear search
+            <p className="text-muted-foreground">
+              No games found{searchQuery && ` matching "${searchQuery}"`}{selectedGenre && ` in ${selectedGenre}`}
+            </p>
+            <Button variant="ghost" size="sm" onClick={() => { setSearchQuery(""); setSelectedGenre(null); }} className="mt-2">
+              Clear filters
             </Button>
           </div>
         ) : (
