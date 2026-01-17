@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Bell, Camera, Loader2, Mail, Save, User, Volume2, ShieldOff, UserX } from "lucide-react";
+import { ArrowLeft, Bell, Camera, Loader2, Mail, Palette, Save, User, Volume2, ShieldOff, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -14,6 +15,7 @@ import { useNotificationSettings } from "@/hooks/useNotificationSettings";
 import { useBlockedUsers, useUnblockUser } from "@/hooks/useBlockedUsers";
 import { useEmailPreferences } from "@/hooks/useEmailPreferences";
 import { useQuery } from "@tanstack/react-query";
+import { ThemePreviewCard } from "@/components/settings/ThemePreviewCard";
 
 interface Profile {
   username: string | null;
@@ -24,6 +26,7 @@ interface Profile {
 export default function Settings() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme, themes } = useTheme();
   const { soundEnabled, desktopEnabled, setSoundEnabled, setDesktopEnabled } = useNotificationSettings();
   const { saleEmailEnabled, setSaleEmailEnabled, isPending: emailPending } = useEmailPreferences();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -281,6 +284,29 @@ export default function Settings() {
                 {(profile.bio?.length || 0)}/500 characters
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Theme Selection Section */}
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Palette className="w-5 h-5 text-muted-foreground" />
+            <h2 className="font-medium">Theme</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Choose a theme that suits your style
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {themes.map((t) => (
+              <ThemePreviewCard
+                key={t.id}
+                themeId={t.id}
+                name={t.name}
+                description={t.description}
+                isActive={theme === t.id}
+                onClick={() => setTheme(t.id)}
+              />
+            ))}
           </div>
         </div>
 
