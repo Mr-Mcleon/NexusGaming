@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "cyber" | "midnight" | "sunset" | "forest" | "ocean" | "lavender";
+export type Theme = "cyber" | "midnight" | "sunset" | "forest" | "ocean" | "lavender" | "light";
 
 interface ThemeContextType {
   theme: Theme;
@@ -11,6 +11,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const themes: { id: Theme; name: string; description: string }[] = [
+  { id: "light", name: "Light Mode", description: "Clean & bright" },
   { id: "cyber", name: "Cyber Neon", description: "Electric cyan & purple" },
   { id: "midnight", name: "Midnight", description: "Deep blue & gold" },
   { id: "sunset", name: "Sunset", description: "Warm orange & pink" },

@@ -9,6 +9,7 @@ import {
 import { Palette, Check } from "lucide-react";
 
 const themeColors: Record<Theme, string> = {
+  light: "bg-blue-500",
   cyber: "bg-cyan-500",
   midnight: "bg-amber-400",
   sunset: "bg-orange-500",
