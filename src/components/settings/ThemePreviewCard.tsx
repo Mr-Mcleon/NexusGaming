@@ -18,6 +18,13 @@ const themeColors: Record<Theme, {
   accent: string;
   card: string;
 }> = {
+  light: {
+    bg: "bg-[#fafafa]",
+    sidebar: "bg-white",
+    primary: "bg-[#3b82f6]",
+    accent: "bg-[#8b5cf6]",
+    card: "bg-white/80",
+  },
   cyber: {
     bg: "bg-[#0a0a14]",
     sidebar: "bg-[#12121c]",
@@ -86,11 +93,11 @@ export const ThemePreviewCard = ({
       <div className={cn("rounded-lg overflow-hidden", colors.bg)}>
         <div className="flex h-24">
           {/* Sidebar preview */}
-          <div className={cn("w-8 p-1 flex flex-col gap-1", colors.sidebar)}>
+          <div className={cn("w-8 p-1 flex flex-col gap-1", colors.sidebar, themeId === "light" ? "border-r border-gray-200" : "")}>
             <div className={cn("w-full h-3 rounded-sm", colors.primary, "opacity-80")} />
-            <div className="w-full h-2 rounded-sm bg-white/10" />
-            <div className="w-full h-2 rounded-sm bg-white/10" />
-            <div className="w-full h-2 rounded-sm bg-white/10" />
+            <div className={cn("w-full h-2 rounded-sm", themeId === "light" ? "bg-gray-300" : "bg-white/10")} />
+            <div className={cn("w-full h-2 rounded-sm", themeId === "light" ? "bg-gray-300" : "bg-white/10")} />
+            <div className={cn("w-full h-2 rounded-sm", themeId === "light" ? "bg-gray-300" : "bg-white/10")} />
           </div>
           
           {/* Main content preview */}
@@ -100,14 +107,14 @@ export const ThemePreviewCard = ({
               <div className={cn("h-2 w-12 rounded-sm", colors.primary, "opacity-60")} />
               <div className="flex gap-1">
                 <div className={cn("w-2 h-2 rounded-full", colors.accent, "opacity-60")} />
-                <div className="w-2 h-2 rounded-full bg-white/20" />
+                <div className={cn("w-2 h-2 rounded-full", themeId === "light" ? "bg-gray-300" : "bg-white/20")} />
               </div>
             </div>
             
             {/* Content cards */}
             <div className="flex gap-1">
-              <div className={cn("flex-1 h-10 rounded", colors.card, "border border-white/5")} />
-              <div className={cn("flex-1 h-10 rounded", colors.card, "border border-white/5")} />
+              <div className={cn("flex-1 h-10 rounded", colors.card, themeId === "light" ? "border border-gray-200 shadow-sm" : "border border-white/5")} />
+              <div className={cn("flex-1 h-10 rounded", colors.card, themeId === "light" ? "border border-gray-200 shadow-sm" : "border border-white/5")} />
             </div>
             
             {/* Bottom bar */}
