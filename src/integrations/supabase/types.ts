@@ -514,6 +514,39 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          created_at: string
+          desktop_notifications_enabled: boolean | null
+          id: string
+          last_synced_at: string | null
+          sound_enabled: boolean | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          desktop_notifications_enabled?: boolean | null
+          id?: string
+          last_synced_at?: string | null
+          sound_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          desktop_notifications_enabled?: boolean | null
+          id?: string
+          last_synced_at?: string | null
+          sound_enabled?: boolean | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wishlist: {
         Row: {
           added_at: string
