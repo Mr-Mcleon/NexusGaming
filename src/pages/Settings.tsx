@@ -16,6 +16,8 @@ import { useBlockedUsers, useUnblockUser } from "@/hooks/useBlockedUsers";
 import { useEmailPreferences } from "@/hooks/useEmailPreferences";
 import { useQuery } from "@tanstack/react-query";
 import { ThemePreviewCard } from "@/components/settings/ThemePreviewCard";
+import { AccountSyncSection } from "@/components/settings/AccountSyncSection";
+import { useAccountSync } from "@/hooks/useAccountSync";
 
 interface Profile {
   username: string | null;
@@ -29,6 +31,7 @@ export default function Settings() {
   const { theme, setTheme, themes } = useTheme();
   const { soundEnabled, desktopEnabled, setSoundEnabled, setDesktopEnabled } = useNotificationSettings();
   const { saleEmailEnabled, setSaleEmailEnabled, isPending: emailPending } = useEmailPreferences();
+  const { syncCurrentSettings, syncEnabled } = useAccountSync();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [loading, setLoading] = useState(true);
@@ -304,11 +307,20 @@ export default function Settings() {
                 name={t.name}
                 description={t.description}
                 isActive={theme === t.id}
-                onClick={() => setTheme(t.id)}
+                onClick={() => {
+                  setTheme(t.id);
+                  // Auto-sync theme change
+                  if (syncEnabled) {
+                    setTimeout(() => syncCurrentSettings(), 100);
+                  }
+                }}
               />
             ))}
           </div>
         </div>
+
+        {/* Account Sync Section */}
+        <AccountSyncSection />
 
         {/* Notification Settings Section */}
         <div className="glass-card rounded-xl p-6 mb-6">
@@ -327,7 +339,12 @@ export default function Settings() {
               <Switch
                 id="sound-toggle"
                 checked={soundEnabled}
-                onCheckedChange={setSoundEnabled}
+                onCheckedChange={(checked) => {
+                  setSoundEnabled(checked);
+                  if (syncEnabled) {
+                    setTimeout(() => syncCurrentSettings(), 100);
+                  }
+                }}
               />
             </div>
 
@@ -344,7 +361,12 @@ export default function Settings() {
               <Switch
                 id="desktop-toggle"
                 checked={desktopEnabled}
-                onCheckedChange={setDesktopEnabled}
+                onCheckedChange={(checked) => {
+                  setDesktopEnabled(checked);
+                  if (syncEnabled) {
+                    setTimeout(() => syncCurrentSettings(), 100);
+                  }
+                }}
               />
             </div>
 
