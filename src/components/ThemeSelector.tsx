@@ -6,9 +6,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Palette, Check } from "lucide-react";
+import { Palette, Check, Monitor } from "lucide-react";
 
 const themeColors: Record<Theme, string> = {
+  system: "bg-gradient-to-r from-blue-500 to-cyan-500",
   light: "bg-blue-500",
   cyber: "bg-cyan-500",
   midnight: "bg-amber-400",
@@ -19,14 +20,14 @@ const themeColors: Record<Theme, string> = {
 };
 
 export const ThemeSelector = () => {
-  const { theme, setTheme, themes } = useTheme();
+  const { theme, setTheme, themes, resolvedTheme } = useTheme();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Palette className="w-5 h-5" />
-          <span className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${themeColors[theme]}`} />
+          <span className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${themeColors[resolvedTheme]}`} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48 bg-popover">
@@ -36,7 +37,11 @@ export const ThemeSelector = () => {
             onClick={() => setTheme(t.id)}
             className="flex items-center gap-3 cursor-pointer"
           >
-            <div className={`w-4 h-4 rounded-full ${themeColors[t.id]}`} />
+            {t.id === "system" ? (
+              <Monitor className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <div className={`w-4 h-4 rounded-full ${themeColors[t.id]}`} />
+            )}
             <div className="flex-1">
               <p className="text-sm font-medium">{t.name}</p>
               <p className="text-xs text-muted-foreground">{t.description}</p>
