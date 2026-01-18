@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Play, ChevronRight, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GameCard, type Game } from "@/components/games/GameCard";
+import { StreamerCard } from "@/components/streaming/StreamerCard";
 
 const featuredGame: Game = {
   id: "1",
@@ -142,23 +143,29 @@ export const HomeSection = () => {
         </div>
       </section>
 
-      {/* Quick Stats */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Games Owned", value: "127", icon: "🎮", color: "from-primary/20 to-primary/5" },
-          { label: "Hours Played", value: "1,284", icon: "⏱️", color: "from-accent/20 to-accent/5" },
-          { label: "Achievements", value: "342", icon: "🏆", color: "from-warning/20 to-warning/5" },
-          { label: "Friends Online", value: "12", icon: "👥", color: "from-online/20 to-online/5" },
-        ].map((stat) => (
-          <div 
-            key={stat.label}
-            className={`glass-card p-4 rounded-xl bg-gradient-to-br ${stat.color}`}
-          >
-            <div className="text-2xl mb-2">{stat.icon}</div>
-            <div className="font-display text-2xl font-bold">{stat.value}</div>
-            <div className="text-sm text-muted-foreground">{stat.label}</div>
-          </div>
-        ))}
+      {/* Streamer Section & Quick Stats */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Screen Recording Card */}
+        <StreamerCard />
+        
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { label: "Games Owned", value: "127", icon: "🎮", color: "from-primary/20 to-primary/5" },
+            { label: "Hours Played", value: "1,284", icon: "⏱️", color: "from-accent/20 to-accent/5" },
+            { label: "Achievements", value: "342", icon: "🏆", color: "from-warning/20 to-warning/5" },
+            { label: "Friends Online", value: "12", icon: "👥", color: "from-online/20 to-online/5" },
+          ].map((stat) => (
+            <div 
+              key={stat.label}
+              className={`glass-card p-4 rounded-xl bg-gradient-to-br ${stat.color}`}
+            >
+              <div className="text-2xl mb-2">{stat.icon}</div>
+              <div className="font-display text-2xl font-bold">{stat.value}</div>
+              <div className="text-sm text-muted-foreground">{stat.label}</div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );
