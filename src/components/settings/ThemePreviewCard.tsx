@@ -1,6 +1,6 @@
-import { Check } from "lucide-react";
+import { Check, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Theme } from "@/contexts/ThemeContext";
+import { Theme, useTheme } from "@/contexts/ThemeContext";
 
 interface ThemePreviewCardProps {
   themeId: Theme;
@@ -10,8 +10,8 @@ interface ThemePreviewCardProps {
   onClick: () => void;
 }
 
-// Theme color configurations for preview
-const themeColors: Record<Theme, {
+// Theme color configurations for preview (excluding system which is dynamic)
+const themeColors: Record<Exclude<Theme, "system">, {
   bg: string;
   sidebar: string;
   primary: string;
@@ -76,7 +76,80 @@ export const ThemePreviewCard = ({
   isActive,
   onClick,
 }: ThemePreviewCardProps) => {
+  const { resolvedTheme } = useTheme();
+  
+  // For system theme, show a special split preview
+  if (themeId === "system") {
+    return (
+      <button
+        onClick={onClick}
+        className={cn(
+          "relative w-full rounded-xl p-1 transition-all duration-300",
+          "hover:scale-[1.02] hover:shadow-lg",
+          isActive
+            ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+            : "ring-1 ring-border hover:ring-primary/50"
+        )}
+      >
+        {/* System Theme Split Preview */}
+        <div className="rounded-lg overflow-hidden h-24 flex">
+          {/* Light side */}
+          <div className="flex-1 bg-[#fafafa] flex items-center justify-center relative">
+            <div className="absolute inset-0 flex">
+              <div className="w-6 bg-white border-r border-gray-200 p-1 flex flex-col gap-1">
+                <div className="w-full h-2 rounded-sm bg-[#3b82f6] opacity-80" />
+                <div className="w-full h-1.5 rounded-sm bg-gray-300" />
+                <div className="w-full h-1.5 rounded-sm bg-gray-300" />
+              </div>
+              <div className="flex-1 p-1.5">
+                <div className="h-1.5 w-8 rounded-sm bg-[#3b82f6] opacity-60 mb-1" />
+                <div className="flex gap-0.5">
+                  <div className="flex-1 h-6 rounded bg-white/80 border border-gray-200" />
+                  <div className="flex-1 h-6 rounded bg-white/80 border border-gray-200" />
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Dark side */}
+          <div className="flex-1 bg-[#0a0a14] flex items-center justify-center relative">
+            <div className="absolute inset-0 flex">
+              <div className="w-6 bg-[#12121c] p-1 flex flex-col gap-1">
+                <div className="w-full h-2 rounded-sm bg-[#00f0ff] opacity-80" />
+                <div className="w-full h-1.5 rounded-sm bg-white/10" />
+                <div className="w-full h-1.5 rounded-sm bg-white/10" />
+              </div>
+              <div className="flex-1 p-1.5">
+                <div className="h-1.5 w-8 rounded-sm bg-[#00f0ff] opacity-60 mb-1" />
+                <div className="flex gap-0.5">
+                  <div className="flex-1 h-6 rounded bg-[#1a1a2e]/60 border border-white/5" />
+                  <div className="flex-1 h-6 rounded bg-[#1a1a2e]/60 border border-white/5" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Theme info */}
+        <div className="p-3 text-left">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-muted-foreground" />
+              <h3 className="font-medium text-sm">{name}</h3>
+            </div>
+            {isActive && (
+              <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                <Check className="w-3 h-3 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        </div>
+      </button>
+    );
+  }
+
   const colors = themeColors[themeId];
+  const isLightTheme = themeId === "light";
 
   return (
     <button
@@ -93,11 +166,11 @@ export const ThemePreviewCard = ({
       <div className={cn("rounded-lg overflow-hidden", colors.bg)}>
         <div className="flex h-24">
           {/* Sidebar preview */}
-          <div className={cn("w-8 p-1 flex flex-col gap-1", colors.sidebar, themeId === "light" ? "border-r border-gray-200" : "")}>
+          <div className={cn("w-8 p-1 flex flex-col gap-1", colors.sidebar, isLightTheme ? "border-r border-gray-200" : "")}>
             <div className={cn("w-full h-3 rounded-sm", colors.primary, "opacity-80")} />
-            <div className={cn("w-full h-2 rounded-sm", themeId === "light" ? "bg-gray-300" : "bg-white/10")} />
-            <div className={cn("w-full h-2 rounded-sm", themeId === "light" ? "bg-gray-300" : "bg-white/10")} />
-            <div className={cn("w-full h-2 rounded-sm", themeId === "light" ? "bg-gray-300" : "bg-white/10")} />
+            <div className={cn("w-full h-2 rounded-sm", isLightTheme ? "bg-gray-300" : "bg-white/10")} />
+            <div className={cn("w-full h-2 rounded-sm", isLightTheme ? "bg-gray-300" : "bg-white/10")} />
+            <div className={cn("w-full h-2 rounded-sm", isLightTheme ? "bg-gray-300" : "bg-white/10")} />
           </div>
           
           {/* Main content preview */}
@@ -107,14 +180,14 @@ export const ThemePreviewCard = ({
               <div className={cn("h-2 w-12 rounded-sm", colors.primary, "opacity-60")} />
               <div className="flex gap-1">
                 <div className={cn("w-2 h-2 rounded-full", colors.accent, "opacity-60")} />
-                <div className={cn("w-2 h-2 rounded-full", themeId === "light" ? "bg-gray-300" : "bg-white/20")} />
+                <div className={cn("w-2 h-2 rounded-full", isLightTheme ? "bg-gray-300" : "bg-white/20")} />
               </div>
             </div>
             
             {/* Content cards */}
             <div className="flex gap-1">
-              <div className={cn("flex-1 h-10 rounded", colors.card, themeId === "light" ? "border border-gray-200 shadow-sm" : "border border-white/5")} />
-              <div className={cn("flex-1 h-10 rounded", colors.card, themeId === "light" ? "border border-gray-200 shadow-sm" : "border border-white/5")} />
+              <div className={cn("flex-1 h-10 rounded", colors.card, isLightTheme ? "border border-gray-200 shadow-sm" : "border border-white/5")} />
+              <div className={cn("flex-1 h-10 rounded", colors.card, isLightTheme ? "border border-gray-200 shadow-sm" : "border border-white/5")} />
             </div>
             
             {/* Bottom bar */}
