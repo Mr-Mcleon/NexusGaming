@@ -8,6 +8,7 @@ import {
   Edit2,
   Check,
   HardDrive,
+  Scissors,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +33,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clip, useClipsGallery } from "@/hooks/useClipsGallery";
 import { formatDuration } from "@/hooks/useScreenRecording";
-import { cn } from "@/lib/utils";
+import { ClipTrimmer } from "./ClipTrimmer";
 
 interface ClipsGalleryProps {
   onSaveClip?: (saveFunction: (blob: Blob, duration: number) => Promise<Clip>) => void;
@@ -44,12 +45,14 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
     isLoading,
     deleteClip,
     renameClip,
+    updateClip,
     downloadClip,
     getTotalSize,
     formatSize,
   } = useClipsGallery();
 
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
+  const [trimmingClip, setTrimmingClip] = useState<Clip | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
 
@@ -68,6 +71,12 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditName("");
+  };
+
+  const handleTrimSave = async (trimmedBlob: Blob, newDuration: number) => {
+    if (trimmingClip) {
+      await updateClip(trimmingClip.id, trimmedBlob, newDuration);
+    }
   };
 
   return (
@@ -180,6 +189,18 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
                                 size="icon"
                                 variant="ghost"
                                 className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTrimmingClip(clip);
+                                }}
+                                title="Trim clip"
+                              >
+                                <Scissors className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
                                 onClick={() => handleStartEdit(clip)}
                               >
                                 <Edit2 className="w-3 h-3" />
@@ -255,6 +276,18 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => {
+                    setSelectedClip(null);
+                    setTrimmingClip(selectedClip);
+                  }}
+                  className="gap-2"
+                >
+                  <Scissors className="w-4 h-4" />
+                  Trim
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => downloadClip(selectedClip)}
                   className="gap-2"
                 >
@@ -266,6 +299,14 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Clip Trimmer */}
+      <ClipTrimmer
+        clip={trimmingClip}
+        open={!!trimmingClip}
+        onClose={() => setTrimmingClip(null)}
+        onSave={handleTrimSave}
+      />
     </>
   );
 };
