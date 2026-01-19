@@ -3,6 +3,7 @@ import { Play, ChevronRight, Sparkles, TrendingUp, Clock, Zap } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { GameCard, type Game } from "@/components/games/GameCard";
 import { StreamerCard } from "@/components/streaming/StreamerCard";
+import { ClipsGallery } from "@/components/streaming/ClipsGallery";
 
 const featuredGame: Game = {
   id: "1",
@@ -143,13 +144,18 @@ export const HomeSection = () => {
         </div>
       </section>
 
-      {/* Streamer Section & Quick Stats */}
+      {/* Streamer Section & Clips Gallery */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Screen Recording Card */}
         <StreamerCard />
         
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Clips Gallery */}
+        <ClipsGallery />
+      </section>
+
+      {/* Quick Stats */}
+      <section>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Games Owned", value: "127", icon: "🎮", color: "from-primary/20 to-primary/5" },
             { label: "Hours Played", value: "1,284", icon: "⏱️", color: "from-accent/20 to-accent/5" },

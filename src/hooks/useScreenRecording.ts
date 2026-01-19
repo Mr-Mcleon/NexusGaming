@@ -8,6 +8,7 @@ interface UseScreenRecordingReturn {
   duration: number;
   recordedBlob: Blob | null;
   previewUrl: string | null;
+  finalDuration: number;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   pauseRecording: () => void;
@@ -19,6 +20,7 @@ interface UseScreenRecordingReturn {
 export const useScreenRecording = (): UseScreenRecordingReturn => {
   const [state, setState] = useState<RecordingState>("idle");
   const [duration, setDuration] = useState(0);
+  const [finalDuration, setFinalDuration] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -112,6 +114,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setRecordedBlob(blob);
+        setFinalDuration(duration);
         
         // Clean up previous preview URL
         if (previewUrl) {
@@ -200,6 +203,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
     setRecordedBlob(null);
     setPreviewUrl(null);
     setDuration(0);
+    setFinalDuration(0);
     setState("idle");
     chunksRef.current = [];
   }, [previewUrl]);
@@ -207,6 +211,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
   return {
     state,
     duration,
+    finalDuration,
     recordedBlob,
     previewUrl,
     startRecording,
