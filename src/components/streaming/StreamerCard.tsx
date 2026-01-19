@@ -10,18 +10,21 @@ import {
   Monitor,
   Mic,
   MicOff,
-  Settings
+  Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useScreenRecording, formatDuration } from "@/hooks/useScreenRecording";
+import { useClipsGallery } from "@/hooks/useClipsGallery";
 
 export const StreamerCard = () => {
   const {
     state,
     duration,
+    finalDuration,
     previewUrl,
+    recordedBlob,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -30,7 +33,22 @@ export const StreamerCard = () => {
     resetRecording,
   } = useScreenRecording();
 
+  const { saveClip } = useClipsGallery();
+
   const [showMicIndicator, setShowMicIndicator] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveToGallery = async () => {
+    if (recordedBlob) {
+      setIsSaving(true);
+      try {
+        await saveClip(recordedBlob, finalDuration);
+        resetRecording();
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
 
   return (
     <Card className="glass-card border-primary/20 overflow-hidden">
@@ -165,8 +183,17 @@ export const StreamerCard = () => {
           {state === "stopped" && previewUrl && (
             <>
               <Button
-                onClick={downloadRecording}
+                onClick={handleSaveToGallery}
                 variant="gaming"
+                className="gap-2"
+                disabled={isSaving}
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? "Saving..." : "Save to Gallery"}
+              </Button>
+              <Button
+                onClick={downloadRecording}
+                variant="outline"
                 className="gap-2"
               >
                 <Download className="w-4 h-4" />
@@ -174,11 +201,10 @@ export const StreamerCard = () => {
               </Button>
               <Button
                 onClick={resetRecording}
-                variant="outline"
-                className="gap-2"
+                variant="ghost"
+                size="icon"
               >
                 <RotateCcw className="w-4 h-4" />
-                New Recording
               </Button>
             </>
           )}
