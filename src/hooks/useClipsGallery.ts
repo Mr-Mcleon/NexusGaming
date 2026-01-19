@@ -191,6 +191,54 @@ export const useClipsGallery = () => {
     }
   }, []);
 
+  const updateClip = useCallback(async (id: string, newBlob: Blob, newDuration: number) => {
+    try {
+      const db = await openDatabase();
+      const transaction = db.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const getRequest = store.get(id);
+
+      return new Promise<void>((resolve, reject) => {
+        getRequest.onsuccess = async () => {
+          const clip = getRequest.result;
+          if (clip) {
+            const newThumbnail = await generateThumbnail(newBlob);
+            clip.blob = newBlob;
+            clip.duration = newDuration;
+            clip.size = newBlob.size;
+            clip.thumbnailUrl = newThumbnail;
+            
+            const putRequest = store.put(clip);
+            putRequest.onsuccess = () => {
+              setClips((prev) =>
+                prev.map((c) =>
+                  c.id === id
+                    ? { ...c, blob: newBlob, duration: newDuration, size: newBlob.size, thumbnailUrl: newThumbnail }
+                    : c
+                )
+              );
+              toast.success("Clip trimmed successfully!");
+              resolve();
+            };
+            putRequest.onerror = () => {
+              toast.error("Failed to save trimmed clip");
+              reject(putRequest.error);
+            };
+          }
+        };
+
+        getRequest.onerror = () => {
+          toast.error("Failed to update clip");
+          reject(getRequest.error);
+        };
+      });
+    } catch (error) {
+      console.error("Failed to update clip:", error);
+      toast.error("Failed to update clip");
+      throw error;
+    }
+  }, []);
+
   const downloadClip = useCallback((clip: Clip) => {
     const url = URL.createObjectURL(clip.blob);
     const a = document.createElement("a");
@@ -220,6 +268,7 @@ export const useClipsGallery = () => {
     saveClip,
     deleteClip,
     renameClip,
+    updateClip,
     downloadClip,
     getTotalSize,
     formatSize,
