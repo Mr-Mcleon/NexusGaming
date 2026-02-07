@@ -12,13 +12,16 @@ import {
   MicOff,
   Save,
   CloudUpload,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useScreenRecording, formatDuration } from "@/hooks/useScreenRecording";
+import { useScreenRecording, formatDuration, QUALITY_PRESETS, QualityPreset, QualitySettings } from "@/hooks/useScreenRecording";
 import { useClipsGallery } from "@/hooks/useClipsGallery";
 import { useCloudClips } from "@/hooks/useCloudClips";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +34,8 @@ export const StreamerCard = () => {
     finalDuration,
     previewUrl,
     recordedBlob,
+    quality,
+    setQuality,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -134,13 +139,72 @@ export const StreamerCard = () => {
           )}
         </div>
 
-        {/* Controls */}
+        {/* Quality Preset + Controls */}
         <div className="flex items-center justify-center gap-2">
           {state === "idle" && !previewUrl && (
-            <Button onClick={startRecording} variant="gaming" className="gap-2">
-              <Circle className="w-4 h-4 fill-current" />
-              Start Recording
-            </Button>
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                    <Settings2 className="w-3.5 h-3.5" />
+                    {quality.preset === "custom" ? "Custom" : quality.preset}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72" align="center">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">Quality Preset</Label>
+                      <div className="flex gap-1.5">
+                        {(Object.keys(QUALITY_PRESETS) as Array<Exclude<QualityPreset, "custom">>).map((preset) => (
+                          <Button
+                            key={preset}
+                            variant={quality.preset === preset ? "default" : "outline"}
+                            size="sm"
+                            className="flex-1 text-xs h-7"
+                            onClick={() => setQuality(QUALITY_PRESETS[preset])}
+                          >
+                            {preset}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Frame Rate</Label>
+                        <span className="text-xs text-muted-foreground">{quality.frameRate} fps</span>
+                      </div>
+                      <Slider
+                        value={[quality.frameRate]}
+                        min={15}
+                        max={60}
+                        step={5}
+                        onValueChange={([v]) => setQuality({ ...quality, preset: "custom", frameRate: v })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Bitrate</Label>
+                        <span className="text-xs text-muted-foreground">{(quality.videoBitrate / 1_000_000).toFixed(1)} Mbps</span>
+                      </div>
+                      <Slider
+                        value={[quality.videoBitrate / 1_000_000]}
+                        min={1}
+                        max={50}
+                        step={0.5}
+                        onValueChange={([v]) => setQuality({ ...quality, preset: "custom", videoBitrate: v * 1_000_000 })}
+                      />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Resolution: {quality.width}×{quality.height}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button onClick={startRecording} variant="gaming" className="gap-2">
+                <Circle className="w-4 h-4 fill-current" />
+                Start Recording
+              </Button>
+            </>
           )}
           
           {state === "recording" && (

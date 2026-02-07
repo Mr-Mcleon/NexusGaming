@@ -3,12 +3,30 @@ import { toast } from "sonner";
 
 export type RecordingState = "idle" | "recording" | "paused" | "stopped";
 
+export type QualityPreset = "720p" | "1080p" | "4k" | "custom";
+
+export interface QualitySettings {
+  preset: QualityPreset;
+  width: number;
+  height: number;
+  frameRate: number;
+  videoBitrate: number; // in bps
+}
+
+export const QUALITY_PRESETS: Record<Exclude<QualityPreset, "custom">, QualitySettings> = {
+  "720p": { preset: "720p", width: 1280, height: 720, frameRate: 30, videoBitrate: 2_500_000 },
+  "1080p": { preset: "1080p", width: 1920, height: 1080, frameRate: 60, videoBitrate: 8_000_000 },
+  "4k": { preset: "4k", width: 3840, height: 2160, frameRate: 60, videoBitrate: 35_000_000 },
+};
+
 interface UseScreenRecordingReturn {
   state: RecordingState;
   duration: number;
   recordedBlob: Blob | null;
   previewUrl: string | null;
   finalDuration: number;
+  quality: QualitySettings;
+  setQuality: (q: QualitySettings) => void;
   startRecording: () => Promise<void>;
   stopRecording: () => void;
   pauseRecording: () => void;
@@ -23,6 +41,18 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
   const [finalDuration, setFinalDuration] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [quality, setQuality] = useState<QualitySettings>(() => {
+    const saved = localStorage.getItem("nexus-recording-quality");
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore */ }
+    }
+    return QUALITY_PRESETS["1080p"];
+  });
+
+  const handleSetQuality = useCallback((q: QualitySettings) => {
+    setQuality(q);
+    localStorage.setItem("nexus-recording-quality", JSON.stringify(q));
+  }, []);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -48,7 +78,9 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           displaySurface: "monitor",
-          frameRate: { ideal: 60, max: 60 },
+          width: { ideal: quality.width },
+          height: { ideal: quality.height },
+          frameRate: { ideal: quality.frameRate, max: quality.frameRate },
         },
         audio: true,
       });
@@ -102,7 +134,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
 
       const mediaRecorder = new MediaRecorder(combinedStream, {
         mimeType,
-        videoBitsPerSecond: 8000000, // 8 Mbps
+        videoBitsPerSecond: quality.videoBitrate,
       });
 
       mediaRecorder.ondataavailable = (event) => {
@@ -214,6 +246,8 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
     finalDuration,
     recordedBlob,
     previewUrl,
+    quality,
+    setQuality: handleSetQuality,
     startRecording,
     stopRecording,
     pauseRecording,
