@@ -10,15 +10,21 @@ import {
   Monitor,
   Mic,
   MicOff,
-  Save
+  Save,
+  CloudUpload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useScreenRecording, formatDuration } from "@/hooks/useScreenRecording";
 import { useClipsGallery } from "@/hooks/useClipsGallery";
+import { useCloudClips } from "@/hooks/useCloudClips";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const StreamerCard = () => {
+  const { user } = useAuth();
   const {
     state,
     duration,
@@ -34,15 +40,27 @@ export const StreamerCard = () => {
   } = useScreenRecording();
 
   const { saveClip } = useClipsGallery();
+  const { uploadClip, isSyncing } = useCloudClips();
 
   const [showMicIndicator, setShowMicIndicator] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [autoBackup, setAutoBackup] = useState(() => {
+    return localStorage.getItem("nexus-auto-backup") === "true";
+  });
+
+  const handleToggleAutoBackup = (checked: boolean) => {
+    setAutoBackup(checked);
+    localStorage.setItem("nexus-auto-backup", String(checked));
+  };
 
   const handleSaveToGallery = async () => {
     if (recordedBlob) {
       setIsSaving(true);
       try {
-        await saveClip(recordedBlob, finalDuration);
+        const clip = await saveClip(recordedBlob, finalDuration);
+        if (autoBackup && user && clip) {
+          await uploadClip(clip);
+        }
         resetRecording();
       } finally {
         setIsSaving(false);
@@ -95,7 +113,6 @@ export const StreamerCard = () => {
                 </p>
               </div>
               
-              {/* Recording indicators */}
               <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1">
                   <Monitor className="w-3 h-3 text-primary" />
@@ -105,11 +122,7 @@ export const StreamerCard = () => {
                   "flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1",
                   showMicIndicator ? "text-primary" : "text-muted-foreground"
                 )}>
-                  {showMicIndicator ? (
-                    <Mic className="w-3 h-3" />
-                  ) : (
-                    <MicOff className="w-3 h-3" />
-                  )}
+                  {showMicIndicator ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
                   <span className="text-xs">Mic</span>
                 </div>
               </div>
@@ -117,22 +130,14 @@ export const StreamerCard = () => {
           )}
           
           {state === "stopped" && previewUrl && (
-            <video
-              src={previewUrl}
-              controls
-              className="w-full h-full object-contain"
-            />
+            <video src={previewUrl} controls className="w-full h-full object-contain" />
           )}
         </div>
 
         {/* Controls */}
         <div className="flex items-center justify-center gap-2">
           {state === "idle" && !previewUrl && (
-            <Button
-              onClick={startRecording}
-              variant="gaming"
-              className="gap-2"
-            >
+            <Button onClick={startRecording} variant="gaming" className="gap-2">
               <Circle className="w-4 h-4 fill-current" />
               Start Recording
             </Button>
@@ -140,19 +145,10 @@ export const StreamerCard = () => {
           
           {state === "recording" && (
             <>
-              <Button
-                onClick={pauseRecording}
-                variant="outline"
-                size="icon"
-                className="w-10 h-10"
-              >
+              <Button onClick={pauseRecording} variant="outline" size="icon" className="w-10 h-10">
                 <Pause className="w-4 h-4" />
               </Button>
-              <Button
-                onClick={stopRecording}
-                variant="destructive"
-                className="gap-2"
-              >
+              <Button onClick={stopRecording} variant="destructive" className="gap-2">
                 <Square className="w-4 h-4 fill-current" />
                 Stop Recording
               </Button>
@@ -161,19 +157,10 @@ export const StreamerCard = () => {
           
           {state === "paused" && (
             <>
-              <Button
-                onClick={resumeRecording}
-                variant="outline"
-                size="icon"
-                className="w-10 h-10"
-              >
+              <Button onClick={resumeRecording} variant="outline" size="icon" className="w-10 h-10">
                 <Play className="w-4 h-4" />
               </Button>
-              <Button
-                onClick={stopRecording}
-                variant="destructive"
-                className="gap-2"
-              >
+              <Button onClick={stopRecording} variant="destructive" className="gap-2">
                 <Square className="w-4 h-4 fill-current" />
                 Stop Recording
               </Button>
@@ -182,36 +169,30 @@ export const StreamerCard = () => {
           
           {state === "stopped" && previewUrl && (
             <>
-              <Button
-                onClick={handleSaveToGallery}
-                variant="gaming"
-                className="gap-2"
-                disabled={isSaving}
-              >
+              <Button onClick={handleSaveToGallery} variant="gaming" className="gap-2" disabled={isSaving || isSyncing}>
                 <Save className="w-4 h-4" />
-                {isSaving ? "Saving..." : "Save to Gallery"}
+                {isSaving ? (isSyncing ? "Backing up..." : "Saving...") : "Save to Gallery"}
               </Button>
-              <Button
-                onClick={downloadRecording}
-                variant="outline"
-                className="gap-2"
-              >
+              <Button onClick={downloadRecording} variant="outline" className="gap-2">
                 <Download className="w-4 h-4" />
                 Download
               </Button>
-              <Button
-                onClick={resetRecording}
-                variant="ghost"
-                size="icon"
-              >
+              <Button onClick={resetRecording} variant="ghost" size="icon">
                 <RotateCcw className="w-4 h-4" />
               </Button>
             </>
           )}
         </div>
 
-        {/* Tips */}
-        <div className="text-xs text-muted-foreground text-center space-y-1">
+        {/* Auto-backup toggle + Tips */}
+        <div className="text-xs text-muted-foreground text-center space-y-2">
+          {user && (
+            <div className="flex items-center justify-center gap-2">
+              <CloudUpload className="w-3.5 h-3.5" />
+              <Label htmlFor="auto-backup" className="text-xs cursor-pointer">Auto cloud backup</Label>
+              <Switch id="auto-backup" checked={autoBackup} onCheckedChange={handleToggleAutoBackup} className="scale-75" />
+            </div>
+          )}
           <p>💡 Select your screen, window, or tab to record</p>
           {state === "idle" && (
             <p className="opacity-70">Includes system audio + microphone when available</p>
