@@ -100,6 +100,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_clips: {
+        Row: {
+          created_at: string
+          duration: number
+          id: string
+          local_id: string
+          name: string
+          size: number
+          storage_path: string
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration?: number
+          id?: string
+          local_id: string
+          name: string
+          size?: number
+          storage_path: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          id?: string
+          local_id?: string
+          name?: string
+          size?: number
+          storage_path?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
