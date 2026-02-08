@@ -1,4 +1,4 @@
-import { Camera, CameraOff, Move } from "lucide-react";
+import { Camera, CameraOff, Move, PictureInPicture2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { WebcamPosition, WebcamSize, UseWebcamReturn } from "@/hooks/useWebcam";
@@ -97,6 +97,15 @@ export const WebcamControls = ({ webcam }: { webcam: UseWebcamReturn }) => {
               ))}
             </div>
           </div>
+          <Button
+            variant={webcam.isPiP ? "default" : "outline"}
+            size="sm"
+            className="w-full h-6 text-[10px] gap-1"
+            onClick={webcam.togglePiP}
+          >
+            <PictureInPicture2 className="w-3 h-3" />
+            {webcam.isPiP ? "Exit PiP" : "Picture-in-Picture"}
+          </Button>
         </>
       )}
     </div>
