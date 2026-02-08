@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
-export type RecordingState = "idle" | "recording" | "paused" | "stopped";
+export type RecordingState = "idle" | "countdown" | "recording" | "paused" | "stopped";
 
 export type QualityPreset = "720p" | "1080p" | "4k" | "custom";
 
@@ -29,6 +29,7 @@ export interface WebcamCompositeOptions {
 interface UseScreenRecordingReturn {
   state: RecordingState;
   duration: number;
+  countdown: number;
   recordedBlob: Blob | null;
   previewUrl: string | null;
   finalDuration: number;
@@ -44,6 +45,7 @@ interface UseScreenRecordingReturn {
 
 export const useScreenRecording = (): UseScreenRecordingReturn => {
   const [state, setState] = useState<RecordingState>("idle");
+  const [countdown, setCountdown] = useState(0);
   const [duration, setDuration] = useState(0);
   const [finalDuration, setFinalDuration] = useState(0);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -89,7 +91,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
     canvasRef.current = null;
   }, []);
 
-  const startRecording = useCallback(async (webcam?: WebcamCompositeOptions) => {
+  const beginCapture = useCallback(async (webcam?: WebcamCompositeOptions) => {
     try {
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
@@ -247,6 +249,16 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
     }
   }, [previewUrl, startTimer, stopTimer, stopCompositing, quality]);
 
+  const startRecording = useCallback(async (webcam?: WebcamCompositeOptions) => {
+    setState("countdown");
+    for (let i = 3; i >= 1; i--) {
+      setCountdown(i);
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    setCountdown(0);
+    await beginCapture(webcam);
+  }, [beginCapture]);
+
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
@@ -300,6 +312,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
 
   return {
     state,
+    countdown,
     duration,
     finalDuration,
     recordedBlob,
