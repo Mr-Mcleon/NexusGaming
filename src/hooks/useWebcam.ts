@@ -17,7 +17,9 @@ export interface UseWebcamReturn {
   size: WebcamSize;
   sizePixels: number;
   isLoading: boolean;
+  isPiP: boolean;
   toggle: () => Promise<void>;
+  togglePiP: () => Promise<void>;
   setPosition: (p: WebcamPosition) => void;
   setSize: (s: WebcamSize) => void;
   stop: () => void;
@@ -27,6 +29,7 @@ export const useWebcam = (): UseWebcamReturn => {
   const [enabled, setEnabled] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPiP, setIsPiP] = useState(false);
   const [position, setPosition] = useState<WebcamPosition>(() => {
     return (localStorage.getItem("nexus-webcam-position") as WebcamPosition) || "bottom-right";
   });
@@ -65,13 +68,35 @@ export const useWebcam = (): UseWebcamReturn => {
     }
   }, []);
 
+  const exitPiP = useCallback(async () => {
+    if (document.pictureInPictureElement) {
+      try { await document.exitPictureInPicture(); } catch { /* ignore */ }
+    }
+    setIsPiP(false);
+  }, []);
+
   const stop = useCallback(() => {
+    exitPiP();
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
     }
     setStream(null);
     setEnabled(false);
-  }, [stream]);
+  }, [stream, exitPiP]);
+
+  const togglePiP = useCallback(async () => {
+    if (!videoRef.current || !enabled) return;
+    if (document.pictureInPictureElement) {
+      await exitPiP();
+    } else {
+      try {
+        await videoRef.current.requestPictureInPicture();
+        setIsPiP(true);
+      } catch {
+        // PiP not supported or denied
+      }
+    }
+  }, [enabled, exitPiP]);
 
   const toggle = useCallback(async () => {
     if (enabled) {
@@ -97,6 +122,13 @@ export const useWebcam = (): UseWebcamReturn => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Listen for PiP exit via browser controls
+  useEffect(() => {
+    const handler = () => setIsPiP(false);
+    videoRef.current?.addEventListener("leavepictureinpicture", handler);
+    return () => videoRef.current?.removeEventListener("leavepictureinpicture", handler);
+  }, [enabled]);
+
   return {
     enabled,
     stream,
@@ -105,7 +137,9 @@ export const useWebcam = (): UseWebcamReturn => {
     size,
     sizePixels: SIZE_MAP[size],
     isLoading,
+    isPiP,
     toggle,
+    togglePiP,
     setPosition: handleSetPosition,
     setSize: handleSetSize,
     stop,
