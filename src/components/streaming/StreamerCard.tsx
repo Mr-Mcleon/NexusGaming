@@ -36,6 +36,7 @@ export const StreamerCard = () => {
   const webcam = useWebcam();
   const {
     state,
+    countdown,
     duration,
     finalDuration,
     previewUrl,
@@ -124,6 +125,17 @@ export const StreamerCard = () => {
             </div>
           )}
           
+          {state === "countdown" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-20">
+              <div className="text-center">
+                <div className="font-display text-7xl font-bold text-primary animate-pulse">
+                  {countdown}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">Get ready...</p>
+              </div>
+            </div>
+          )}
+
           {(state === "recording" || state === "paused") && (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-center">
