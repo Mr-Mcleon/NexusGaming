@@ -13,21 +13,27 @@ import {
   Save,
   CloudUpload,
   Settings2,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useScreenRecording, formatDuration, QUALITY_PRESETS, QualityPreset, QualitySettings } from "@/hooks/useScreenRecording";
 import { useClipsGallery } from "@/hooks/useClipsGallery";
 import { useCloudClips } from "@/hooks/useCloudClips";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWebcam } from "@/hooks/useWebcam";
+import { WebcamOverlay, WebcamControls } from "@/components/streaming/WebcamOverlay";
+
 
 export const StreamerCard = () => {
   const { user } = useAuth();
+  const webcam = useWebcam();
   const {
     state,
     duration,
@@ -47,6 +53,14 @@ export const StreamerCard = () => {
   const { saveClip } = useClipsGallery();
   const { uploadClip, isSyncing } = useCloudClips();
 
+  const handleStartRecording = () => {
+    startRecording({
+      enabled: webcam.enabled,
+      stream: webcam.stream,
+      position: webcam.position,
+      sizePixels: webcam.sizePixels,
+    });
+  };
   const [showMicIndicator, setShowMicIndicator] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [autoBackup, setAutoBackup] = useState(() => {
@@ -99,6 +113,9 @@ export const StreamerCard = () => {
       <CardContent className="space-y-4">
         {/* Preview Area */}
         <div className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden border border-border/50">
+          {/* Webcam overlay preview */}
+          <WebcamOverlay webcam={webcam} isRecording={state === "recording" || state === "paused" || (state === "idle" && !previewUrl)} />
+          
           {state === "idle" && !previewUrl && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
               <Monitor className="w-12 h-12 mb-3 opacity-50" />
@@ -130,6 +147,12 @@ export const StreamerCard = () => {
                   {showMicIndicator ? <Mic className="w-3 h-3" /> : <MicOff className="w-3 h-3" />}
                   <span className="text-xs">Mic</span>
                 </div>
+                {webcam.enabled && (
+                  <div className="flex items-center gap-1.5 bg-background/80 backdrop-blur-sm rounded-full px-2 py-1 text-primary">
+                    <Camera className="w-3 h-3" />
+                    <span className="text-xs">Cam</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -194,13 +217,15 @@ export const StreamerCard = () => {
                         onValueChange={([v]) => setQuality({ ...quality, preset: "custom", videoBitrate: v * 1_000_000 })}
                       />
                     </div>
+                    <Separator />
+                    <WebcamControls webcam={webcam} />
                     <div className="text-[10px] text-muted-foreground">
                       Resolution: {quality.width}×{quality.height}
                     </div>
                   </div>
                 </PopoverContent>
               </Popover>
-              <Button onClick={startRecording} variant="gaming" className="gap-2">
+              <Button onClick={handleStartRecording} variant="gaming" className="gap-2">
                 <Circle className="w-4 h-4 fill-current" />
                 Start Recording
               </Button>
