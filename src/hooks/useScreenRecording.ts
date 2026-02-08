@@ -19,6 +19,13 @@ export const QUALITY_PRESETS: Record<Exclude<QualityPreset, "custom">, QualitySe
   "4k": { preset: "4k", width: 3840, height: 2160, frameRate: 60, videoBitrate: 35_000_000 },
 };
 
+export interface WebcamCompositeOptions {
+  enabled: boolean;
+  stream: MediaStream | null;
+  position: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+  sizePixels: number;
+}
+
 interface UseScreenRecordingReturn {
   state: RecordingState;
   duration: number;
@@ -27,7 +34,7 @@ interface UseScreenRecordingReturn {
   finalDuration: number;
   quality: QualitySettings;
   setQuality: (q: QualitySettings) => void;
-  startRecording: () => Promise<void>;
+  startRecording: (webcam?: WebcamCompositeOptions) => Promise<void>;
   stopRecording: () => void;
   pauseRecording: () => void;
   resumeRecording: () => void;
@@ -58,6 +65,8 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animFrameRef = useRef<number | null>(null);
 
   const startTimer = useCallback(() => {
     timerRef.current = setInterval(() => {
@@ -72,9 +81,16 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
     }
   }, []);
 
-  const startRecording = useCallback(async () => {
+  const stopCompositing = useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    canvasRef.current = null;
+  }, []);
+
+  const startRecording = useCallback(async (webcam?: WebcamCompositeOptions) => {
     try {
-      // Request screen capture with audio
       const displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           displaySurface: "monitor",
@@ -86,98 +102,140 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
       });
 
       // Try to capture microphone audio as well
-      let combinedStream = displayStream;
-      
+      let audioTracks: MediaStreamTrack[] = [...displayStream.getAudioTracks()];
+
       try {
         const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
+          audio: { echoCancellation: true, noiseSuppression: true },
         });
-
-        // Combine display and microphone audio tracks
         const audioContext = new AudioContext();
         const destination = audioContext.createMediaStreamDestination();
-
-        // Add display audio if available
         const displayAudioTracks = displayStream.getAudioTracks();
         if (displayAudioTracks.length > 0) {
-          const displayAudioSource = audioContext.createMediaStreamSource(
-            new MediaStream(displayAudioTracks)
-          );
-          displayAudioSource.connect(destination);
+          const src = audioContext.createMediaStreamSource(new MediaStream(displayAudioTracks));
+          src.connect(destination);
         }
-
-        // Add microphone audio
-        const micAudioSource = audioContext.createMediaStreamSource(audioStream);
-        micAudioSource.connect(destination);
-
-        // Create combined stream
-        combinedStream = new MediaStream([
-          ...displayStream.getVideoTracks(),
-          ...destination.stream.getAudioTracks(),
-        ]);
-      } catch (audioError) {
+        const micSrc = audioContext.createMediaStreamSource(audioStream);
+        micSrc.connect(destination);
+        audioTracks = [...destination.stream.getAudioTracks()];
+      } catch {
         console.log("Microphone access denied, recording without mic audio");
       }
 
-      streamRef.current = combinedStream;
+      // Determine if we need canvas compositing (webcam enabled)
+      let recordStream: MediaStream;
+
+      if (webcam?.enabled && webcam.stream) {
+        // Set up canvas-based compositing
+        const canvas = document.createElement("canvas");
+        canvas.width = quality.width;
+        canvas.height = quality.height;
+        canvasRef.current = canvas;
+        const ctx = canvas.getContext("2d")!;
+
+        const screenVideo = document.createElement("video");
+        screenVideo.srcObject = displayStream;
+        screenVideo.muted = true;
+        screenVideo.play();
+
+        const camVideo = document.createElement("video");
+        camVideo.srcObject = webcam.stream;
+        camVideo.muted = true;
+        camVideo.play();
+
+        const drawFrame = () => {
+          ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+
+          // Draw circular webcam overlay
+          const camSize = webcam.sizePixels * (canvas.width / 1920); // scale relative
+          const padding = 20;
+          let x: number, y: number;
+          switch (webcam.position) {
+            case "top-left":
+              x = padding; y = padding; break;
+            case "top-right":
+              x = canvas.width - camSize - padding; y = padding; break;
+            case "bottom-left":
+              x = padding; y = canvas.height - camSize - padding; break;
+            default: // bottom-right
+              x = canvas.width - camSize - padding; y = canvas.height - camSize - padding;
+          }
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x + camSize / 2, y + camSize / 2, camSize / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          // Mirror the webcam horizontally
+          ctx.translate(x + camSize, y);
+          ctx.scale(-1, 1);
+          ctx.drawImage(camVideo, 0, 0, camSize, camSize);
+          ctx.restore();
+
+          // Draw border
+          ctx.beginPath();
+          ctx.arc(x + camSize / 2, y + camSize / 2, camSize / 2, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(139, 92, 246, 0.6)";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          animFrameRef.current = requestAnimationFrame(drawFrame);
+        };
+        drawFrame();
+
+        const canvasStream = canvas.captureStream(quality.frameRate);
+        recordStream = new MediaStream([
+          ...canvasStream.getVideoTracks(),
+          ...audioTracks,
+        ]);
+      } else {
+        recordStream = new MediaStream([
+          ...displayStream.getVideoTracks(),
+          ...audioTracks,
+        ]);
+      }
+
+      streamRef.current = recordStream;
       chunksRef.current = [];
 
-      // Determine supported mime type
       const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
         ? "video/webm;codecs=vp9,opus"
         : MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")
         ? "video/webm;codecs=vp8,opus"
         : "video/webm";
 
-      const mediaRecorder = new MediaRecorder(combinedStream, {
+      const mediaRecorder = new MediaRecorder(recordStream, {
         mimeType,
         videoBitsPerSecond: quality.videoBitrate,
       });
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) chunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setRecordedBlob(blob);
         setFinalDuration(duration);
-        
-        // Clean up previous preview URL
-        if (previewUrl) {
-          URL.revokeObjectURL(previewUrl);
-        }
-        
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
         const url = URL.createObjectURL(blob);
         setPreviewUrl(url);
         setState("stopped");
         stopTimer();
-        
-        // Cleanup stream
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-        }
+        stopCompositing();
+        if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+        displayStream.getTracks().forEach((t) => t.stop());
       };
 
-      // Handle user stopping screen share via browser UI
       displayStream.getVideoTracks()[0].onended = () => {
-        if (mediaRecorderRef.current?.state === "recording") {
-          stopRecording();
-        }
+        if (mediaRecorderRef.current?.state === "recording") stopRecording();
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(1000); // Capture in 1-second chunks
-      
+      mediaRecorder.start(1000);
       setState("recording");
       setDuration(0);
       startTimer();
-      
       toast.success("Recording started!");
     } catch (error) {
       console.error("Error starting recording:", error);
@@ -187,7 +245,7 @@ export const useScreenRecording = (): UseScreenRecordingReturn => {
         toast.error("Failed to start recording");
       }
     }
-  }, [previewUrl, startTimer, stopTimer]);
+  }, [previewUrl, startTimer, stopTimer, stopCompositing, quality]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
