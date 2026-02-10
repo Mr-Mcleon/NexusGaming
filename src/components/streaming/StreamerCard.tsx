@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useScreenRecording, formatDuration, QUALITY_PRESETS, QualityPreset, QualitySettings } from "@/hooks/useScreenRecording";
 import { useClipsGallery } from "@/hooks/useClipsGallery";
@@ -210,6 +211,7 @@ export const StreamerCard = () => {
         </div>
 
         {/* Quality Preset + Controls */}
+        <TooltipProvider delayDuration={300}>
         <div className="flex items-center justify-center gap-2">
           {state === "idle" && !previewUrl && (
             <>
@@ -272,53 +274,89 @@ export const StreamerCard = () => {
                   </div>
                 </PopoverContent>
               </Popover>
-              <Button onClick={handleStartRecording} variant="gaming" className="gap-2">
-                <Circle className="w-4 h-4 fill-current" />
-                Start Recording
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={handleStartRecording} variant="gaming" className="gap-2">
+                    <Circle className="w-4 h-4 fill-current" />
+                    Start Recording
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+R</kbd></TooltipContent>
+              </Tooltip>
             </>
           )}
           
           {state === "recording" && (
             <>
-              <Button onClick={pauseRecording} variant="outline" size="icon" className="w-10 h-10">
-                <Pause className="w-4 h-4" />
-              </Button>
-              <Button onClick={stopRecording} variant="destructive" className="gap-2">
-                <Square className="w-4 h-4 fill-current" />
-                Stop Recording
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={pauseRecording} variant="outline" size="icon" className="w-10 h-10">
+                    <Pause className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+P</kbd></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={stopRecording} variant="destructive" className="gap-2">
+                    <Square className="w-4 h-4 fill-current" />
+                    Stop Recording
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+R</kbd></TooltipContent>
+              </Tooltip>
             </>
           )}
           
           {state === "paused" && (
             <>
-              <Button onClick={resumeRecording} variant="outline" size="icon" className="w-10 h-10">
-                <Play className="w-4 h-4" />
-              </Button>
-              <Button onClick={stopRecording} variant="destructive" className="gap-2">
-                <Square className="w-4 h-4 fill-current" />
-                Stop Recording
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={resumeRecording} variant="outline" size="icon" className="w-10 h-10">
+                    <Play className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+P</kbd></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={stopRecording} variant="destructive" className="gap-2">
+                    <Square className="w-4 h-4 fill-current" />
+                    Stop Recording
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+R</kbd></TooltipContent>
+              </Tooltip>
             </>
           )}
           
           {state === "stopped" && previewUrl && (
             <>
-              <Button onClick={handleSaveToGallery} variant="gaming" className="gap-2" disabled={isSaving || isSyncing}>
-                <Save className="w-4 h-4" />
-                {isSaving ? (isSyncing ? "Backing up..." : "Saving...") : "Save to Gallery"}
-              </Button>
-              <Button onClick={downloadRecording} variant="outline" className="gap-2">
-                <Download className="w-4 h-4" />
-                Download
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={handleSaveToGallery} variant="gaming" className="gap-2" disabled={isSaving || isSyncing}>
+                    <Save className="w-4 h-4" />
+                    {isSaving ? (isSyncing ? "Backing up..." : "Saving...") : "Save to Gallery"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+S</kbd></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={downloadRecording} variant="outline" className="gap-2">
+                    <Download className="w-4 h-4" />
+                    Download
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom"><kbd className="font-mono text-[10px]">Ctrl+Shift+D</kbd></TooltipContent>
+              </Tooltip>
               <Button onClick={resetRecording} variant="ghost" size="icon">
                 <RotateCcw className="w-4 h-4" />
               </Button>
             </>
           )}
         </div>
+        </TooltipProvider>
 
         {/* Auto-backup toggle + Tips */}
         <div className="text-xs text-muted-foreground text-center space-y-2">
