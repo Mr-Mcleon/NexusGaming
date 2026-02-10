@@ -29,6 +29,7 @@ import { useCloudClips } from "@/hooks/useCloudClips";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWebcam } from "@/hooks/useWebcam";
 import { WebcamOverlay, WebcamControls } from "@/components/streaming/WebcamOverlay";
+import { useRecordingHotkeys } from "@/hooks/useRecordingHotkeys";
 
 
 export const StreamerCard = () => {
@@ -62,6 +63,14 @@ export const StreamerCard = () => {
       sizePixels: webcam.sizePixels,
     });
   };
+  useRecordingHotkeys({
+    state,
+    onStart: handleStartRecording,
+    onStop: stopRecording,
+    onPause: pauseRecording,
+    onResume: resumeRecording,
+  });
+
   const [showMicIndicator, setShowMicIndicator] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [autoBackup, setAutoBackup] = useState(() => {
@@ -298,6 +307,7 @@ export const StreamerCard = () => {
           {state === "idle" && (
             <p className="opacity-70">Includes system audio + microphone when available</p>
           )}
+          <p className="opacity-50">⌨️ Ctrl+Shift+R to start/stop · Ctrl+Shift+P to pause/resume</p>
         </div>
       </CardContent>
     </Card>
