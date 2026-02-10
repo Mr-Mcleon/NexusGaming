@@ -63,14 +63,6 @@ export const StreamerCard = () => {
       sizePixels: webcam.sizePixels,
     });
   };
-  useRecordingHotkeys({
-    state,
-    onStart: handleStartRecording,
-    onStop: stopRecording,
-    onPause: pauseRecording,
-    onResume: resumeRecording,
-  });
-
   const [showMicIndicator, setShowMicIndicator] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [autoBackup, setAutoBackup] = useState(() => {
@@ -96,6 +88,17 @@ export const StreamerCard = () => {
       }
     }
   };
+
+  useRecordingHotkeys({
+    state,
+    hasRecording: !!recordedBlob,
+    onStart: handleStartRecording,
+    onStop: stopRecording,
+    onPause: pauseRecording,
+    onResume: resumeRecording,
+    onSave: handleSaveToGallery,
+    onDownload: downloadRecording,
+  });
 
   return (
     <Card className="glass-card border-primary/20 overflow-hidden">

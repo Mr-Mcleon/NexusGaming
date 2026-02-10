@@ -4,6 +4,8 @@ import { Keyboard, X } from "lucide-react";
 const shortcuts = [
   { keys: ["Ctrl", "Shift", "R"], description: "Start / Stop recording" },
   { keys: ["Ctrl", "Shift", "P"], description: "Pause / Resume recording" },
+  { keys: ["Ctrl", "Shift", "S"], description: "Save to gallery" },
+  { keys: ["Ctrl", "Shift", "D"], description: "Download recording" },
   { keys: ["Ctrl", "Shift", "?"], description: "Toggle this cheat sheet" },
 ];
 
