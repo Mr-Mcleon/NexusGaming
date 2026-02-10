@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { GameCard, type Game } from "@/components/games/GameCard";
 import { StreamerCard } from "@/components/streaming/StreamerCard";
 import { ClipsGallery } from "@/components/streaming/ClipsGallery";
+import { HotkeyCheatSheet } from "@/components/streaming/HotkeyCheatSheet";
 
 const featuredGame: Game = {
   id: "1",
@@ -173,6 +174,7 @@ export const HomeSection = () => {
           ))}
         </div>
       </section>
+      <HotkeyCheatSheet />
     </div>
   );
 };
