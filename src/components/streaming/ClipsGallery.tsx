@@ -14,6 +14,7 @@ import {
   CloudDownload,
   RefreshCw,
   CheckCircle2,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,7 @@ import { useCloudClips, CloudClip } from "@/hooks/useCloudClips";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDuration } from "@/hooks/useScreenRecording";
 import { ClipTrimmer } from "./ClipTrimmer";
+import { ClipFilterBar, useClipFilters } from "./ClipFilterBar";
 
 interface ClipsGalleryProps {
   onSaveClip?: (saveFunction: (blob: Blob, duration: number) => Promise<Clip>) => void;
@@ -73,11 +75,16 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
     isClipSynced,
   } = useCloudClips();
 
+  const { filters, setFilters, activeCount, clearFilters, filterLocalClips, filterCloudClips } = useClipFilters();
+
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
   const [trimmingClip, setTrimmingClip] = useState<Clip | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const filteredClips = filterLocalClips(clips);
+  const filteredCloudClips = filterCloudClips(cloudClips);
 
   useEffect(() => {
     if (user) fetchCloudClips();
@@ -284,6 +291,7 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
 
         <CardContent>
           <Tabs defaultValue="local" className="w-full">
+            <ClipFilterBar filters={filters} setFilters={setFilters} activeCount={activeCount} clearFilters={clearFilters} />
             <div className="flex items-center justify-between mb-3">
               <TabsList className="h-8">
                 <TabsTrigger value="local" className="text-xs px-3 h-7">
@@ -318,10 +326,16 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
                   <p className="text-sm">No clips saved yet</p>
                   <p className="text-xs mt-1 opacity-70">Your recordings will appear here</p>
                 </div>
+              ) : filteredClips.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <Search className="w-8 h-8 mb-2 opacity-50" />
+                  <p className="text-sm">No clips match your filters</p>
+                  <Button variant="link" size="sm" className="text-xs mt-1" onClick={clearFilters}>Clear filters</Button>
+                </div>
               ) : (
                 <ScrollArea className="h-[280px] pr-4">
                   <div className="grid grid-cols-2 gap-3">
-                    {clips.map(renderLocalClipCard)}
+                    {filteredClips.map(renderLocalClipCard)}
                   </div>
                 </ScrollArea>
               )}
@@ -343,10 +357,16 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
                   <p className="text-sm">No cloud backups yet</p>
                   <p className="text-xs mt-1 opacity-70">Backup your local clips to sync across devices</p>
                 </div>
+              ) : filteredCloudClips.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <Search className="w-8 h-8 mb-2 opacity-50" />
+                  <p className="text-sm">No cloud clips match your filters</p>
+                  <Button variant="link" size="sm" className="text-xs mt-1" onClick={clearFilters}>Clear filters</Button>
+                </div>
               ) : (
                 <ScrollArea className="h-[280px] pr-4">
                   <div className="grid grid-cols-2 gap-3">
-                    {cloudClips.map(renderCloudClipCard)}
+                    {filteredCloudClips.map(renderCloudClipCard)}
                   </div>
                 </ScrollArea>
               )}
