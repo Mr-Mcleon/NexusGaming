@@ -42,7 +42,7 @@ import { Clip, useClipsGallery } from "@/hooks/useClipsGallery";
 import { useCloudClips, CloudClip } from "@/hooks/useCloudClips";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDuration } from "@/hooks/useScreenRecording";
-import { ClipTrimmer } from "./ClipTrimmer";
+import { ClipEditor } from "./ClipEditor";
 import { ClipFilterBar, useClipFilters } from "./ClipFilterBar";
 
 interface ClipsGalleryProps {
@@ -78,7 +78,7 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
   const { filters, setFilters, activeCount, clearFilters, filterLocalClips, filterCloudClips } = useClipFilters();
 
   const [selectedClip, setSelectedClip] = useState<Clip | null>(null);
-  const [trimmingClip, setTrimmingClip] = useState<Clip | null>(null);
+  const [editingClip, setEditingClip] = useState<Clip | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -105,8 +105,8 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
     setEditName("");
   };
 
-  const handleTrimSave = async (trimmedBlob: Blob, newDuration: number) => {
-    if (trimmingClip) await updateClip(trimmingClip.id, trimmedBlob, newDuration);
+  const handleEditorSave = async (editedBlob: Blob, newDuration: number) => {
+    if (editingClip) await updateClip(editingClip.id, editedBlob, newDuration);
   };
 
   const handleRestoreFromCloud = async (cloudClip: CloudClip) => {
@@ -178,7 +178,7 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
                     <CloudUpload className="w-3 h-3" />
                   </Button>
                 )}
-                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setTrimmingClip(clip); }} title="Trim clip">
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditingClip(clip); }} title="Edit clip">
                   <Scissors className="w-3 h-3" />
                 </Button>
                 <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleStartEdit(clip)}>
@@ -387,8 +387,8 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <span>Duration: {formatDuration(selectedClip.duration)} • Size: {formatSize(selectedClip.size)}</span>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setSelectedClip(null); setTrimmingClip(selectedClip); }} className="gap-2">
-                    <Scissors className="w-4 h-4" /> Trim
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedClip(null); setEditingClip(selectedClip); }} className="gap-2">
+                    <Scissors className="w-4 h-4" /> Edit
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => downloadClip(selectedClip)} className="gap-2">
                     <Download className="w-4 h-4" /> Download
@@ -400,7 +400,7 @@ export const ClipsGallery = ({ onSaveClip }: ClipsGalleryProps) => {
         </DialogContent>
       </Dialog>
 
-      <ClipTrimmer clip={trimmingClip} open={!!trimmingClip} onClose={() => setTrimmingClip(null)} onSave={handleTrimSave} />
+      <ClipEditor clip={editingClip} open={!!editingClip} onClose={() => setEditingClip(null)} onSave={handleEditorSave} />
     </>
   );
 };
