@@ -20,6 +20,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -29,6 +30,12 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      if (!isLogin && password !== confirmPassword) {
+        toast.error("Passwords do not match");
+        setLoading(false);
+        return;
+      }
+
       const validationData = isLogin
         ? { email, password }
         : { email, password, username };
@@ -200,8 +207,30 @@ const Auth = () => {
                 {!isLogin && <PasswordStrengthIndicator password={password} />}
               </div>
 
+              {!isLogin && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                    Confirm Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`pl-10 h-12 bg-background/50 border-border/50 focus:border-primary ${confirmPassword && password !== confirmPassword ? "border-destructive" : ""}`}
+                    />
+                  </div>
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="text-xs text-destructive">Passwords do not match</p>
+                  )}
+                </div>
+              )}
+
+
               <Button
-                type="submit"
                 variant="gaming"
                 className="w-full h-12 text-base font-semibold group"
                 disabled={loading}
