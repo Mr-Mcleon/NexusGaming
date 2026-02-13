@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Gamepad2, Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react";
 import { z } from "zod";
+import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -196,6 +197,7 @@ const Auth = () => {
                     className="pl-10 h-12 bg-background/50 border-border/50 focus:border-primary"
                   />
                 </div>
+                {!isLogin && <PasswordStrengthIndicator password={password} />}
               </div>
 
               <Button
