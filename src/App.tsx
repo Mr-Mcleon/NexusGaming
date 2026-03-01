@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import GameDetails from "./pages/GameDetails";
 import SharedWishlist from "./pages/SharedWishlist";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,7 @@ const App = () => (
                   </AuthRoute>
                 }
               />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/wishlist/:token" element={<SharedWishlist />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
