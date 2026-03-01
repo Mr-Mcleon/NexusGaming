@@ -9,6 +9,7 @@ import { Gamepad2, Mail, Lock, User, ArrowRight, Sparkles } from "lucide-react";
 import { lovable } from "@/integrations/lovable/index";
 import { z } from "zod";
 import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
+import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -23,6 +24,7 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -208,6 +210,18 @@ const Auth = () => {
                 {!isLogin && <PasswordStrengthIndicator password={password} />}
               </div>
 
+              {isLogin && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setForgotPasswordOpen(true)}
+                    className="text-xs text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
               {!isLogin && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword" className="text-sm font-medium">
@@ -301,6 +315,8 @@ const Auth = () => {
           </p>
         </div>
       </div>
+
+      <ForgotPasswordDialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen} />
     </div>
   );
 };
