@@ -1,4 +1,4 @@
-import { Search, MessageSquare, ChevronDown, Wifi, LogOut, Settings } from "lucide-react";
+import { Search, MessageSquare, ChevronDown, Wifi, LogOut, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -86,6 +86,10 @@ export const Header = () => {
               <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(`/profile/${user?.id}`)} className="cursor-pointer">
+              <User className="w-4 h-4 mr-2" />
+              View Profile
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer">
               <Settings className="w-4 h-4 mr-2" />
               Profile Settings
