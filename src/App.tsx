@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import GameDetails from "./pages/GameDetails";
 import SharedWishlist from "./pages/SharedWishlist";
 import ResetPassword from "./pages/ResetPassword";
+import PublicProfile from "./pages/PublicProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -96,6 +97,14 @@ const App = () => (
                 }
               />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route
+                path="/profile/:userId"
+                element={
+                  <ProtectedRoute>
+                    <PublicProfile />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/wishlist/:token" element={<SharedWishlist />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
