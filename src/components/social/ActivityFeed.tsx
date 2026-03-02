@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { Play, ShoppingCart, Trophy, UserPlus, Square, Gamepad2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useActivityFeed, Activity, ActivityType } from "@/hooks/useActivityFeed";
@@ -28,9 +29,9 @@ const ActivityItem = ({ activity }: { activity: Activity }) => {
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium">
+          <Link to={`/profile/${activity.user_id}`} className="font-medium hover:text-primary hover:underline transition-colors">
             {activity.profile?.username || "Someone"}
-          </span>
+          </Link>
           <Icon className={cn("w-4 h-4", config.color)} />
           <span className="text-muted-foreground">{config.label}</span>
           {activity.game && (
