@@ -17,6 +17,7 @@ import {
   BarChart3,
   Ban
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFriends } from "@/hooks/useFriends";
@@ -228,7 +229,7 @@ export const SocialSection = () => {
                           )} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium">{friend.name}</h4>
+                          <Link to={`/profile/${friend.userId}`} className="font-medium hover:text-primary hover:underline transition-colors">{friend.name}</Link>
                           {friend.playingGame ? (
                             <p className="text-sm text-primary flex items-center gap-1">
                               <Gamepad2 className="w-3 h-3" />
