@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Play, ChevronRight, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
+import { Play, ChevronRight, Sparkles, TrendingUp, Clock, Zap, Star, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { GameCard, type Game } from "@/components/games/GameCard";
 import { StreamerCard } from "@/components/streaming/StreamerCard";
 import { ClipsGallery } from "@/components/streaming/ClipsGallery";
 import { HotkeyCheatSheet } from "@/components/streaming/HotkeyCheatSheet";
+import { useRecommendations } from "@/hooks/useRecommendations";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const featuredGame: Game = {
   id: "1",
@@ -79,6 +84,9 @@ const trendingGames: Game[] = [
 ];
 
 export const HomeSection = () => {
+  const { data: recommendations, isLoading: recsLoading } = useRecommendations(8);
+  const navigate = useNavigate();
+
   return (
     <div className="p-6 space-y-8 overflow-y-auto scrollbar-gaming h-full">
       {/* Welcome Banner */}
@@ -144,6 +152,90 @@ export const HomeSection = () => {
           ))}
         </div>
       </section>
+
+      {/* Recommended For You */}
+      {(recsLoading || (recommendations && recommendations.length > 0)) && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Wand2 className="w-5 h-5 text-primary" />
+              <h2 className="font-display text-xl font-bold">Recommended For You</h2>
+              <Badge variant="secondary" className="text-xs">AI</Badge>
+            </div>
+          </div>
+          {recsLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-xl overflow-hidden">
+                  <Skeleton className="aspect-[3/4]" />
+                  <div className="p-3 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {recommendations?.map((game) => (
+                <div
+                  key={game.id}
+                  className="group relative rounded-xl overflow-hidden glass-card card-elevated transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_hsl(var(--primary)/0.2)] cursor-pointer"
+                  onClick={() => navigate(`/game/${game.id}`)}
+                >
+                  <div className="aspect-[3/4] overflow-hidden">
+                    {game.cover_image_url ? (
+                      <img
+                        src={game.cover_image_url}
+                        alt={game.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Sparkles className="w-10 h-10 text-muted-foreground/50" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+
+                  {/* Match reasons */}
+                  <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                    {game.matchReasons.map((reason) => (
+                      <span
+                        key={reason}
+                        className="px-1.5 py-0.5 bg-primary/80 backdrop-blur-sm text-primary-foreground text-[10px] rounded-full font-medium"
+                      >
+                        {reason}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Info */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-card to-transparent">
+                    <h3 className="font-medium text-sm truncate">{game.title}</h3>
+                    <div className="flex items-center justify-between mt-1">
+                      {game.rating && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Star className="w-3 h-3 text-warning fill-warning" />
+                          {game.rating}
+                        </div>
+                      )}
+                      {game.sale_price && game.price ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground line-through">${game.price}</span>
+                          <span className="text-xs font-bold text-primary">${game.sale_price}</span>
+                        </div>
+                      ) : game.price ? (
+                        <span className="text-xs text-muted-foreground">${game.price}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Streamer Section & Clips Gallery */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
