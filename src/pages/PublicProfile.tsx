@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePublicProfile, usePublicLibrary, usePublicAchievements, usePublicActivity } from "@/hooks/usePublicProfile";
 import { useFriends } from "@/hooks/useFriends";
+import { useMutualFriends } from "@/hooks/useMutualFriends";
+import { MutualFriendsSection } from "@/components/social/MutualFriendsSection";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +43,7 @@ export default function PublicProfile() {
   const { data: library = [], isLoading: libraryLoading } = usePublicLibrary(userId);
   const { data: achievementData, isLoading: achievementsLoading } = usePublicAchievements(userId);
   const { data: activities = [], isLoading: activityLoading } = usePublicActivity(userId);
-
+  const { data: mutualFriends = [], isLoading: mutualFriendsLoading } = useMutualFriends(userId);
   const totalPlaytime = library.reduce((sum, e) => sum + (e.play_time_minutes || 0), 0);
   const playtimeHours = Math.floor(totalPlaytime / 60);
   const unlockedCount = achievementData?.userAchievements?.length || 0;
@@ -183,6 +185,11 @@ export default function PublicProfile() {
             </div>
           </div>
         </div>
+
+        {/* Mutual Friends */}
+        {!isOwnProfile && (
+          <MutualFriendsSection mutualFriends={mutualFriends} isLoading={mutualFriendsLoading} />
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="games" className="space-y-6">
