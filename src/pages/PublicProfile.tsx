@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePublicProfile, usePublicLibrary, usePublicAchievements, usePublicActivity } from "@/hooks/usePublicProfile";
+import { useFriends } from "@/hooks/useFriends";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, Gamepad2, Trophy, Clock, Library, Play, ShoppingCart,
-  Square, UserPlus, Lock, User, CalendarDays, Settings,
+  Square, UserPlus, UserCheck, UserX, Lock, User, CalendarDays, Settings, Loader2,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,8 @@ export default function PublicProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isOwnProfile = user?.id === userId;
+  const { friends, pendingRequests, sentRequests, sendFriendRequest, acceptRequest, declineRequest, removeFriend } = useFriends();
+  const [friendActionLoading, setFriendActionLoading] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = usePublicProfile(userId);
   const { data: library = [], isLoading: libraryLoading } = usePublicLibrary(userId);
@@ -75,6 +79,55 @@ export default function PublicProfile() {
 
   const username = profile.username || "Unknown Player";
 
+  const isFriend = friends.some(f => f.user_id === userId || f.friend_id === userId);
+  const incomingRequest = pendingRequests.find(f => f.user_id === userId);
+  const outgoingRequest = sentRequests.find(f => f.friend_id === userId);
+  const friendship = friends.find(f => f.user_id === userId || f.friend_id === userId);
+
+  const handleFriendAction = async (action: () => Promise<boolean>) => {
+    setFriendActionLoading(true);
+    await action();
+    setFriendActionLoading(false);
+  };
+
+  const renderFriendButton = () => {
+    if (!user || isOwnProfile) return null;
+    if (isFriend && friendship) {
+      return (
+        <Button variant="outline" size="sm" disabled={friendActionLoading} onClick={() => handleFriendAction(() => removeFriend(friendship.id))}>
+          {friendActionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserCheck className="w-4 h-4 mr-2" />}
+          Friends
+        </Button>
+      );
+    }
+    if (outgoingRequest) {
+      return (
+        <Button variant="outline" size="sm" disabled className="opacity-70">
+          <Clock className="w-4 h-4 mr-2" /> Request Sent
+        </Button>
+      );
+    }
+    if (incomingRequest) {
+      return (
+        <div className="flex gap-2">
+          <Button variant="gaming" size="sm" disabled={friendActionLoading} onClick={() => handleFriendAction(() => acceptRequest(incomingRequest.id))}>
+            {friendActionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+            Accept
+          </Button>
+          <Button variant="outline" size="sm" disabled={friendActionLoading} onClick={() => handleFriendAction(() => declineRequest(incomingRequest.id))}>
+            <UserX className="w-4 h-4 mr-2" /> Decline
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <Button variant="gaming" size="sm" disabled={friendActionLoading} onClick={() => handleFriendAction(() => sendFriendRequest(userId!))}>
+        {friendActionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+        Add Friend
+      </Button>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto p-6">
@@ -102,7 +155,10 @@ export default function PublicProfile() {
             </Avatar>
 
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="font-display text-3xl font-bold mb-1">{username}</h1>
+              <div className="flex items-center gap-3 justify-center sm:justify-start mb-1">
+                <h1 className="font-display text-3xl font-bold">{username}</h1>
+                {renderFriendButton()}
+              </div>
               {profile.bio && (
                 <p className="text-muted-foreground mb-3 max-w-lg">{profile.bio}</p>
               )}
