@@ -14,8 +14,14 @@ import {
   Settings,
   X,
   Send,
-  ArrowLeft
+  ArrowLeft,
+  Paperclip,
+  FileIcon,
+  Image as ImageIcon,
+  Download,
+  Loader2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -246,7 +252,9 @@ const ConversationItem = ({ conversation, currentUserId, isOnline, onClick }: Co
       <div className="flex-1 text-left min-w-0">
         <p className="text-sm font-medium truncate">{displayName}</p>
         <p className="text-xs text-muted-foreground truncate">
-          {conversation.last_message?.content || "No messages yet"}
+          {conversation.last_message?.file_url 
+            ? `📎 ${conversation.last_message.file_name || "Attachment"}`
+            : conversation.last_message?.content || "No messages yet"}
         </p>
       </div>
       {conversation.unread_count > 0 && (
@@ -269,19 +277,19 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
   const { isOnline } = usePresence();
   const { messages, typingUsers, loading, sendMessage, setTyping, markAsRead } = useConversation(conversationId);
   const [messageInput, setMessageInput] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const conversation = conversations.find(c => c.id === conversationId);
   const otherParticipant = conversation?.participants.find(p => p.user_id !== user?.id);
   const isParticipantOnline = otherParticipant ? isOnline(otherParticipant.user_id) : false;
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Mark messages as read when viewing
   useEffect(() => {
     markAsRead();
   }, [conversationId, markAsRead]);
@@ -293,19 +301,52 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
     setTyping(false);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      const { toast } = await import("sonner");
+      toast.error("File size must be under 10MB");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("chat-attachments")
+        .upload(filePath, file, { contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("chat-attachments")
+        .getPublicUrl(filePath);
+
+      await sendMessage(messageInput || "", {
+        url: publicUrl,
+        name: file.name,
+        type: file.type,
+      });
+      setMessageInput("");
+    } catch (err) {
+      console.error("Upload failed:", err);
+      const { toast } = await import("sonner");
+      toast.error("Failed to upload file");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleInputChange = (value: string) => {
     setMessageInput(value);
-    
-    // Typing indicator logic
     setTyping(true);
-    
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    typingTimeoutRef.current = setTimeout(() => {
-      setTyping(false);
-    }, 2000);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => setTyping(false), 2000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -314,6 +355,8 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
       handleSend();
     }
   };
+
+  const isImageType = (type: string | null) => type?.startsWith("image/");
 
   return (
     <>
@@ -360,7 +403,37 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
                       : "bg-secondary"
                   )}
                 >
-                  {message.content}
+                  {message.file_url && isImageType(message.file_type) ? (
+                    <div className="space-y-1">
+                      <img
+                        src={message.file_url}
+                        alt={message.file_name || "Image"}
+                        className="max-w-full rounded-md cursor-pointer"
+                        onClick={() => window.open(message.file_url!, "_blank")}
+                      />
+                      {message.content && message.content !== message.file_name && (
+                        <p>{message.content}</p>
+                      )}
+                    </div>
+                  ) : message.file_url ? (
+                    <div className="space-y-1">
+                      <a
+                        href={message.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 rounded-md bg-background/20 hover:bg-background/30 transition-colors"
+                      >
+                        <FileIcon className="w-4 h-4 shrink-0" />
+                        <span className="truncate text-xs">{message.file_name || "File"}</span>
+                        <Download className="w-3 h-3 shrink-0 ml-auto" />
+                      </a>
+                      {message.content && message.content !== message.file_name && (
+                        <p>{message.content}</p>
+                      )}
+                    </div>
+                  ) : (
+                    message.content
+                  )}
                 </div>
               </div>
             ))}
@@ -381,7 +454,23 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
 
       {/* Message Input */}
       <div className="p-3 border-t border-border/50">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+          onChange={handleFileUpload}
+        />
         <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+          </Button>
           <Input
             value={messageInput}
             onChange={(e) => handleInputChange(e.target.value)}
@@ -389,7 +478,7 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
             placeholder="Type a message..."
             className="flex-1"
           />
-          <Button size="icon" onClick={handleSend} disabled={!messageInput.trim()}>
+          <Button size="icon" onClick={handleSend} disabled={!messageInput.trim() || isUploading}>
             <Send className="w-4 h-4" />
           </Button>
         </div>
