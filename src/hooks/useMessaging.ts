@@ -9,6 +9,9 @@ export interface Message {
   content: string;
   created_at: string;
   read_at: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  file_type: string | null;
   sender?: {
     username: string | null;
     avatar_url: string | null;
@@ -107,7 +110,12 @@ export const useMessaging = () => {
         return {
           ...convo,
           participants: profiles || [],
-          last_message: lastMessages?.[0],
+          last_message: lastMessages?.[0] ? {
+            ...lastMessages[0],
+            file_url: (lastMessages[0] as any).file_url ?? null,
+            file_name: (lastMessages[0] as any).file_name ?? null,
+            file_type: (lastMessages[0] as any).file_type ?? null,
+          } : undefined,
           unread_count: count || 0,
         };
       })
@@ -249,6 +257,9 @@ export const useConversation = (conversationId: string | null) => {
 
     const messagesWithSenders = data.map(msg => ({
       ...msg,
+      file_url: (msg as any).file_url ?? null,
+      file_name: (msg as any).file_name ?? null,
+      file_type: (msg as any).file_type ?? null,
       sender: profiles?.find(p => p.user_id === msg.sender_id),
     }));
 
@@ -274,7 +285,13 @@ export const useConversation = (conversationId: string | null) => {
           filter: `conversation_id=eq.${conversationId}`,
         },
         async (payload) => {
-          const newMessage = payload.new as Message;
+          const raw = payload.new as any;
+          const newMessage: Message = {
+            ...raw,
+            file_url: raw.file_url ?? null,
+            file_name: raw.file_name ?? null,
+            file_type: raw.file_type ?? null,
+          };
           
           // Get sender profile
           const { data: profile } = await supabase
@@ -326,14 +343,17 @@ export const useConversation = (conversationId: string | null) => {
   }, [conversationId, user?.id, fetchMessages]);
 
   // Send message
-  const sendMessage = async (content: string) => {
-    if (!user || !conversationId || !content.trim()) return;
+  const sendMessage = async (content: string, file?: { url: string; name: string; type: string }) => {
+    if (!user || !conversationId || (!content.trim() && !file)) return;
 
     await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      content: content.trim(),
-    });
+      content: content.trim() || (file ? file.name : ""),
+      file_url: file?.url || null,
+      file_name: file?.name || null,
+      file_type: file?.type || null,
+    } as any);
 
     // Clear typing indicator
     await supabase
