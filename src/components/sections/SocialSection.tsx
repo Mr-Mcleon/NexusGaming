@@ -15,7 +15,10 @@ import {
   Activity,
   Trophy,
   BarChart3,
-  Ban
+  Ban,
+  Plus,
+  LogIn,
+  LogOut
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,41 +35,9 @@ import { Leaderboard } from "@/components/social/Leaderboard";
 import { Badge } from "@/components/ui/badge";
 import { useUserAchievements } from "@/hooks/useAchievements";
 import { useBlockUser } from "@/hooks/useBlockedUsers";
-
-interface Server {
-  id: string;
-  name: string;
-  icon: string;
-  members: number;
-  online: number;
-  channels: { id: string; name: string; type: "text" | "voice"; unread?: number }[];
-}
-
-const servers: Server[] = [
-  {
-    id: "1",
-    name: "Nexus Gaming Hub",
-    icon: "🎮",
-    members: 15420,
-    online: 3241,
-    channels: [
-      { id: "1", name: "general", type: "text", unread: 12 },
-      { id: "2", name: "announcements", type: "text" },
-      { id: "3", name: "Voice Lobby", type: "voice" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Competitive League",
-    icon: "🏆",
-    members: 8920,
-    online: 1523,
-    channels: [
-      { id: "4", name: "ranked-chat", type: "text", unread: 5 },
-      { id: "5", name: "scrims", type: "voice" },
-    ],
-  },
-];
+import { useCommunities, type Community } from "@/hooks/useCommunities";
+import { CreateCommunityDialog } from "@/components/community/CreateCommunityDialog";
+import { CommunityView } from "@/components/community/CommunityView";
 
 const statusColors = {
   online: "bg-online",
@@ -83,6 +54,8 @@ export const SocialSection = () => {
   const blockUser = useBlockUser();
   const [activeTab, setActiveTab] = useState<"friends" | "activity" | "leaderboard" | "achievements" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
+  const { communities, myCommunities, loading: loadingCommunities, createCommunity, joinCommunity, leaveCommunity } = useCommunities();
 
   // Get friend user IDs for playing status lookup
   const friendUserIds = useMemo(() => 
@@ -111,7 +84,17 @@ export const SocialSection = () => {
     f.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // If viewing a community, show the community view
+  if (activeCommunity) {
+    return (
+      <div className="h-full">
+        <CommunityView community={activeCommunity} onBack={() => setActiveCommunity(null)} />
+      </div>
+    );
+  }
+
   return (
+
     <div className="h-full flex">
       <div className="flex-1 flex flex-col">
         {/* Header */}
@@ -146,7 +129,7 @@ export const SocialSection = () => {
               { id: "activity", label: "Activity", icon: Activity, count: null },
               { id: "leaderboard", label: "Leaderboard", icon: BarChart3, count: null },
               { id: "achievements", label: "Achievements", icon: Trophy, count: userAchievements?.length || 0 },
-              { id: "servers", label: "Servers", icon: Hash, count: servers.length },
+              { id: "servers", label: "Communities", icon: Hash, count: myCommunities.length },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -289,67 +272,88 @@ export const SocialSection = () => {
             <AchievementsList />
           ) : (
             <div className="space-y-4">
-              {servers.map((server) => (
-                <div 
-                  key={server.id}
-                  className="glass-card rounded-xl overflow-hidden"
-                >
-                  <div className="p-4 flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-2xl">
-                      {server.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-bold">{server.name}</h3>
-                        <Crown className="w-4 h-4 text-warning" />
+              {/* Create community button */}
+              <CreateCommunityDialog onSubmit={createCommunity}>
+                <Button variant="gaming" className="w-full">
+                  <Plus className="w-4 h-4" />
+                  Create Community
+                </Button>
+              </CreateCommunityDialog>
+
+              {/* My communities */}
+              {myCommunities.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                    My Communities — {myCommunities.length}
+                  </h3>
+                  <div className="space-y-3">
+                    {myCommunities.map((community) => (
+                      <div key={community.id} className="glass-card rounded-xl overflow-hidden">
+                        <div className="p-4 flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-2xl">
+                            {community.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-display font-bold truncate">{community.name}</h3>
+                              {community.owner_id === user?.id && <Crown className="w-4 h-4 text-warning shrink-0" />}
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{community.description || "No description"}</p>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <Button variant="glass" onClick={() => setActiveCommunity(community)}>
+                              Open
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                            {community.owner_id !== user?.id && (
+                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => leaveCommunity(community.id)}>
+                                <LogOut className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-online" />
-                          {server.online.toLocaleString()} online
-                        </span>
-                        <span>{server.members.toLocaleString()} members</span>
-                      </div>
-                    </div>
-                    <Button variant="glass">
-                      Open
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="px-4 pb-4 flex items-center gap-2 overflow-x-auto">
-                    {server.channels.map((channel) => (
-                      <button
-                        key={channel.id}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors whitespace-nowrap"
-                      >
-                        {channel.type === "text" ? (
-                          <Hash className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <Volume2 className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        <span className="text-sm">{channel.name}</span>
-                        {channel.unread && (
-                          <span className="px-1.5 py-0.5 bg-accent text-accent-foreground text-xs rounded-full">
-                            {channel.unread}
-                          </span>
-                        )}
-                      </button>
                     ))}
                   </div>
                 </div>
-              ))}
+              )}
 
-              {/* Discover Servers */}
-              <div className="p-6 rounded-xl bg-gradient-to-r from-primary/10 via-accent/5 to-transparent border border-primary/20 text-center">
-                <h3 className="font-display text-lg font-bold mb-2">Discover Communities</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Find servers for your favorite games and interests
-                </p>
-                <Button variant="gaming">
-                  <Search className="w-4 h-4" />
-                  Browse Servers
-                </Button>
-              </div>
+              {/* Discover communities */}
+              {communities.filter(c => !c.is_member).length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                    Discover Communities
+                  </h3>
+                  <div className="space-y-3">
+                    {communities.filter(c => !c.is_member).map((community) => (
+                      <div key={community.id} className="glass-card rounded-xl overflow-hidden">
+                        <div className="p-4 flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-2xl">
+                            {community.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display font-bold truncate">{community.name}</h3>
+                            <p className="text-sm text-muted-foreground truncate">{community.description || "No description"}</p>
+                          </div>
+                          <Button variant="gaming" onClick={() => joinCommunity(community.id)}>
+                            <LogIn className="w-4 h-4" />
+                            Join
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {communities.length === 0 && !loadingCommunities && (
+                <div className="p-6 rounded-xl bg-gradient-to-r from-primary/10 via-accent/5 to-transparent border border-primary/20 text-center">
+                  <h3 className="font-display text-lg font-bold mb-2">No Communities Yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Create the first community and invite your friends!
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
