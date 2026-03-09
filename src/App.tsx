@@ -12,6 +12,7 @@ import GameDetails from "./pages/GameDetails";
 import SharedWishlist from "./pages/SharedWishlist";
 import ResetPassword from "./pages/ResetPassword";
 import PublicProfile from "./pages/PublicProfile";
+import CommunityInvite from "./pages/CommunityInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
