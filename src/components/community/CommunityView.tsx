@@ -17,6 +17,10 @@ import {
   Download,
   Crown,
   Shield,
+  MoreVertical,
+  UserMinus,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,6 +41,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { InviteDialog } from "@/components/community/InviteDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { CommunityMember } from "@/hooks/useCommunities";
 
 interface CommunityViewProps {
   community: Community;
@@ -45,7 +57,7 @@ interface CommunityViewProps {
 
 export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
   const { user } = useAuth();
-  const { channels, members, loading, createChannel } = useCommunityDetails(community.id);
+  const { channels, members, loading, createChannel, updateMemberRole, kickMember } = useCommunityDetails(community.id);
   const { isOnline } = usePresence();
   const [activeChannel, setActiveChannel] = useState<CommunityChannel | null>(null);
   const [showMembers, setShowMembers] = useState(false);
@@ -195,33 +207,117 @@ export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
 
         {/* Members panel */}
         {showMembers && (
-          <div className="w-48 border-l border-border/50 p-3 bg-card/50 overflow-y-auto">
+          <div className="w-56 border-l border-border/50 p-3 bg-card/50 overflow-y-auto">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Members — {members.length}
             </span>
             <div className="mt-2 space-y-1">
-              {members.map((m) => (
-                <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm">
-                  <div className="relative">
-                    <div className="w-7 h-7 rounded-md bg-gradient-to-br from-secondary to-muted flex items-center justify-center text-xs font-medium">
-                      {m.profile?.username?.[0]?.toUpperCase() || "?"}
-                    </div>
-                    <div
-                      className={cn(
-                        "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card",
-                        isOnline(m.user_id) ? "bg-online" : "bg-offline"
-                      )}
-                    />
+              {/* Group by role */}
+              {["owner", "admin", "moderator", "member"].map((role) => {
+                const roleMembers = members.filter((m) => m.role === role);
+                if (roleMembers.length === 0) return null;
+                return (
+                  <div key={role}>
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-2 mt-2 block">
+                      {role === "owner" ? "👑 Owner" : role === "admin" ? "🛡️ Admin" : role === "moderator" ? "⚔️ Moderator" : "Members"}
+                    </span>
+                    {roleMembers.map((m) => (
+                      <MemberItem
+                        key={m.id}
+                        member={m}
+                        isOnline={isOnline(m.user_id)}
+                        isOwnerOrAdmin={isOwnerOrAdmin}
+                        currentUserId={user?.id}
+                        communityOwnerId={community.owner_id}
+                        onUpdateRole={updateMemberRole}
+                        onKick={kickMember}
+                      />
+                    ))}
                   </div>
-                  <span className="truncate flex-1">{m.profile?.username || "Unknown"}</span>
-                  {m.role === "owner" && <Crown className="w-3 h-3 text-warning shrink-0" />}
-                  {m.role === "admin" && <Shield className="w-3 h-3 text-primary shrink-0" />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+// Member item with role management
+const MemberItem = ({
+  member,
+  isOnline: online,
+  isOwnerOrAdmin,
+  currentUserId,
+  communityOwnerId,
+  onUpdateRole,
+  onKick,
+}: {
+  member: CommunityMember;
+  isOnline: boolean;
+  isOwnerOrAdmin: boolean;
+  currentUserId: string | undefined;
+  communityOwnerId: string;
+  onUpdateRole: (memberId: string, role: string) => Promise<void>;
+  onKick: (memberId: string) => Promise<void>;
+}) => {
+  const isSelf = member.user_id === currentUserId;
+  const isOwner = member.role === "owner";
+  const canManage = isOwnerOrAdmin && !isSelf && !isOwner;
+  const isCurrentUserOwner = currentUserId === communityOwnerId;
+
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm group hover:bg-secondary/30 transition-colors">
+      <div className="relative">
+        <div className="w-7 h-7 rounded-md bg-gradient-to-br from-secondary to-muted flex items-center justify-center text-xs font-medium">
+          {member.profile?.username?.[0]?.toUpperCase() || "?"}
+        </div>
+        <div
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card",
+            online ? "bg-online" : "bg-offline"
+          )}
+        />
+      </div>
+      <span className="truncate flex-1">{member.profile?.username || "Unknown"}</span>
+      {isOwner && <Crown className="w-3 h-3 text-warning shrink-0" />}
+      {member.role === "admin" && <Shield className="w-3 h-3 text-primary shrink-0" />}
+      {member.role === "moderator" && <ShieldCheck className="w-3 h-3 text-accent shrink-0" />}
+
+      {canManage && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            {isCurrentUserOwner && member.role !== "admin" && (
+              <DropdownMenuItem onClick={() => onUpdateRole(member.id, "admin")}>
+                <Shield className="w-3 h-3 mr-2" /> Make Admin
+              </DropdownMenuItem>
+            )}
+            {member.role !== "moderator" && (
+              <DropdownMenuItem onClick={() => onUpdateRole(member.id, "moderator")}>
+                <ShieldCheck className="w-3 h-3 mr-2" /> Make Moderator
+              </DropdownMenuItem>
+            )}
+            {member.role !== "member" && (
+              <DropdownMenuItem onClick={() => onUpdateRole(member.id, "member")}>
+                <ShieldOff className="w-3 h-3 mr-2" /> Remove Role
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => onKick(member.id)}
+            >
+              <UserMinus className="w-3 h-3 mr-2" /> Kick Member
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 };

@@ -242,5 +242,37 @@ export const useCommunityDetails = (communityId: string | null) => {
     }
   };
 
-  return { channels, members, loading, createChannel, refreshDetails: fetchDetails };
+  const updateMemberRole = async (memberId: string, newRole: string) => {
+    try {
+      const { error } = await (supabase
+        .from("community_members" as any)
+        .update({ role: newRole } as any)
+        .eq("id", memberId) as any);
+
+      if (error) throw error;
+      toast.success(`Role updated to ${newRole}`);
+      await fetchDetails();
+    } catch (err) {
+      console.error("Failed to update role:", err);
+      toast.error("Failed to update role");
+    }
+  };
+
+  const kickMember = async (memberId: string) => {
+    try {
+      const { error } = await (supabase
+        .from("community_members" as any)
+        .delete()
+        .eq("id", memberId) as any);
+
+      if (error) throw error;
+      toast.success("Member removed");
+      await fetchDetails();
+    } catch (err) {
+      console.error("Failed to kick member:", err);
+      toast.error("Failed to remove member");
+    }
+  };
+
+  return { channels, members, loading, createChannel, updateMemberRole, kickMember, refreshDetails: fetchDetails };
 };
