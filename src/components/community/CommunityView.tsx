@@ -199,29 +199,35 @@ export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
 
         {/* Members panel */}
         {showMembers && (
-          <div className="w-48 border-l border-border/50 p-3 bg-card/50 overflow-y-auto">
+          <div className="w-56 border-l border-border/50 p-3 bg-card/50 overflow-y-auto">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Members — {members.length}
             </span>
             <div className="mt-2 space-y-1">
-              {members.map((m) => (
-                <div key={m.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm">
-                  <div className="relative">
-                    <div className="w-7 h-7 rounded-md bg-gradient-to-br from-secondary to-muted flex items-center justify-center text-xs font-medium">
-                      {m.profile?.username?.[0]?.toUpperCase() || "?"}
-                    </div>
-                    <div
-                      className={cn(
-                        "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-card",
-                        isOnline(m.user_id) ? "bg-online" : "bg-offline"
-                      )}
-                    />
+              {/* Group by role */}
+              {["owner", "admin", "moderator", "member"].map((role) => {
+                const roleMembers = members.filter((m) => m.role === role);
+                if (roleMembers.length === 0) return null;
+                return (
+                  <div key={role}>
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-2 mt-2 block">
+                      {role === "owner" ? "👑 Owner" : role === "admin" ? "🛡️ Admin" : role === "moderator" ? "⚔️ Moderator" : "Members"}
+                    </span>
+                    {roleMembers.map((m) => (
+                      <MemberItem
+                        key={m.id}
+                        member={m}
+                        isOnline={isOnline(m.user_id)}
+                        isOwnerOrAdmin={isOwnerOrAdmin}
+                        currentUserId={user?.id}
+                        communityOwnerId={community.owner_id}
+                        onUpdateRole={updateMemberRole}
+                        onKick={kickMember}
+                      />
+                    ))}
                   </div>
-                  <span className="truncate flex-1">{m.profile?.username || "Unknown"}</span>
-                  {m.role === "owner" && <Crown className="w-3 h-3 text-warning shrink-0" />}
-                  {m.role === "admin" && <Shield className="w-3 h-3 text-primary shrink-0" />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
