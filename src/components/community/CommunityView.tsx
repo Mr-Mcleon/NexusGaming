@@ -41,6 +41,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { InviteDialog } from "@/components/community/InviteDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { CommunityMember } from "@/hooks/useCommunities";
 
 interface CommunityViewProps {
   community: Community;
