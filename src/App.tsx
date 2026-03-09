@@ -12,6 +12,7 @@ import GameDetails from "./pages/GameDetails";
 import SharedWishlist from "./pages/SharedWishlist";
 import ResetPassword from "./pages/ResetPassword";
 import PublicProfile from "./pages/PublicProfile";
+import CommunityInvite from "./pages/CommunityInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,14 @@ const App = () => (
                 }
               />
               <Route path="/wishlist/:token" element={<SharedWishlist />} />
+              <Route
+                path="/invite/:inviteCode"
+                element={
+                  <ProtectedRoute>
+                    <CommunityInvite />
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -6,7 +6,7 @@ import {
   ArrowLeft,
   Send,
   Users,
-  Settings,
+  Link2,
   Paperclip,
   Loader2,
   Mic,
@@ -36,6 +36,7 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { InviteDialog } from "@/components/community/InviteDialog";
 
 interface CommunityViewProps {
   community: Community;
@@ -85,6 +86,13 @@ export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
           <h2 className="font-display font-bold truncate">{community.name}</h2>
           <p className="text-xs text-muted-foreground">{members.length} members</p>
         </div>
+        {isOwnerOrAdmin && (
+          <InviteDialog communityId={community.id} communityName={community.name}>
+            <Button variant="ghost" size="icon" className="w-8 h-8" title="Invite">
+              <Link2 className="w-4 h-4" />
+            </Button>
+          </InviteDialog>
+        )}
         <Button
           variant="ghost"
           size="icon"
