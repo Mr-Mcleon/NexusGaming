@@ -36,6 +36,7 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { InviteDialog } from "@/components/community/InviteDialog";
 
 interface CommunityViewProps {
   community: Community;

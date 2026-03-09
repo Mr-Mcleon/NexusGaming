@@ -107,6 +107,14 @@ const App = () => (
                 }
               />
               <Route path="/wishlist/:token" element={<SharedWishlist />} />
+              <Route
+                path="/invite/:inviteCode"
+                element={
+                  <ProtectedRoute>
+                    <CommunityInvite />
+                  </ProtectedRoute>
+                }
+              />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
