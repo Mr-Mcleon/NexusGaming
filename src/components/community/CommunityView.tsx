@@ -6,7 +6,7 @@ import {
   ArrowLeft,
   Send,
   Users,
-  Settings,
+  Link2,
   Paperclip,
   Loader2,
   Mic,
