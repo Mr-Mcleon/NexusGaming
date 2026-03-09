@@ -17,6 +17,10 @@ import {
   Download,
   Crown,
   Shield,
+  MoreVertical,
+  UserMinus,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
