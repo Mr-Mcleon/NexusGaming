@@ -103,7 +103,7 @@ export const useAcceptInvite = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.rpc("accept_community_invite", {
+      const { data, error } = await (supabase.rpc as any)("accept_community_invite", {
         p_invite_code: inviteCode,
       });
 
