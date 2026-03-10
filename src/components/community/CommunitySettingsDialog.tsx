@@ -42,6 +42,7 @@ interface CommunitySettingsDialogProps {
 export const CommunitySettingsDialog = ({
   community,
   onUpdated,
+  onDeleted,
   children,
 }: CommunitySettingsDialogProps) => {
   const [open, setOpen] = useState(false);
