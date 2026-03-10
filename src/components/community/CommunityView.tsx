@@ -42,6 +42,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { InviteDialog } from "@/components/community/InviteDialog";
+import { CommunitySettingsDialog } from "@/components/community/CommunitySettingsDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
