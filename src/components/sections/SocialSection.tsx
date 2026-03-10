@@ -55,7 +55,7 @@ export const SocialSection = () => {
   const [activeTab, setActiveTab] = useState<"friends" | "activity" | "leaderboard" | "achievements" | "servers">("friends");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
-  const { communities, myCommunities, loading: loadingCommunities, createCommunity, joinCommunity, leaveCommunity } = useCommunities();
+  const { communities, myCommunities, loading: loadingCommunities, createCommunity, joinCommunity, leaveCommunity, refreshCommunities } = useCommunities();
 
   // Get friend user IDs for playing status lookup
   const friendUserIds = useMemo(() => 
