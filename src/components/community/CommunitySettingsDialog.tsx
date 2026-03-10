@@ -163,6 +163,39 @@ export const CommunitySettingsDialog = ({
           >
             {saving ? "Saving..." : "Save Changes"}
           </Button>
+
+          {/* Danger zone */}
+          <div className="rounded-lg border border-destructive/30 p-3 space-y-2">
+            <p className="text-sm font-medium text-destructive">Danger Zone</p>
+            <p className="text-xs text-muted-foreground">
+              Deleting a community is permanent and cannot be undone.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="w-full" disabled={deleting}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  {deleting ? "Deleting..." : "Delete Community"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete "{community.name}"?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the community, all channels, messages, and member data. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Forever
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
