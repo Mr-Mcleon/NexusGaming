@@ -1,10 +1,21 @@
 import { useState } from "react";
-import { Settings } from "lucide-react";
+import { Settings, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -22,12 +33,14 @@ const ICONS = ["🎮", "🏆", "⚔️", "🎯", "🚀", "💎", "🔥", "🎵",
 interface CommunitySettingsDialogProps {
   community: Community;
   onUpdated: () => void;
+  onDeleted?: () => void;
   children: React.ReactNode;
 }
 
 export const CommunitySettingsDialog = ({
   community,
   onUpdated,
+  onDeleted,
   children,
 }: CommunitySettingsDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -36,6 +49,7 @@ export const CommunitySettingsDialog = ({
   const [icon, setIcon] = useState(community.icon);
   const [isPublic, setIsPublic] = useState(community.is_public);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -60,6 +74,27 @@ export const CommunitySettingsDialog = ({
       toast.error("Failed to update settings");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      // Delete community (cascading deletes should handle members, channels, messages)
+      const { error } = await (supabase
+        .from("communities" as any)
+        .delete()
+        .eq("id", community.id) as any);
+
+      if (error) throw error;
+      toast.success("Community deleted");
+      setOpen(false);
+      onDeleted?.();
+    } catch (err) {
+      console.error("Failed to delete community:", err);
+      toast.error("Failed to delete community");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -147,6 +182,39 @@ export const CommunitySettingsDialog = ({
           >
             {saving ? "Saving..." : "Save Changes"}
           </Button>
+
+          {/* Danger zone */}
+          <div className="rounded-lg border border-destructive/30 p-3 space-y-2">
+            <p className="text-sm font-medium text-destructive">Danger Zone</p>
+            <p className="text-xs text-muted-foreground">
+              Deleting a community is permanent and cannot be undone.
+            </p>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="w-full" disabled={deleting}>
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  {deleting ? "Deleting..." : "Delete Community"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete "{community.name}"?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the community, all channels, messages, and member data. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Forever
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
