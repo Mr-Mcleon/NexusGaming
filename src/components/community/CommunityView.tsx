@@ -21,6 +21,7 @@ import {
   UserMinus,
   ShieldCheck,
   ShieldOff,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { InviteDialog } from "@/components/community/InviteDialog";
+import { CommunitySettingsDialog } from "@/components/community/CommunitySettingsDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +57,7 @@ interface CommunityViewProps {
   onBack: () => void;
 }
 
-export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
+export const CommunityView = ({ community, onBack, onCommunityUpdated }: CommunityViewProps & { onCommunityUpdated?: () => void }) => {
   const { user } = useAuth();
   const { channels, members, loading, createChannel, updateMemberRole, kickMember } = useCommunityDetails(community.id);
   const { isOnline } = usePresence();
@@ -99,11 +101,18 @@ export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
           <p className="text-xs text-muted-foreground">{members.length} members</p>
         </div>
         {isOwnerOrAdmin && (
-          <InviteDialog communityId={community.id} communityName={community.name}>
-            <Button variant="ghost" size="icon" className="w-8 h-8" title="Invite">
-              <Link2 className="w-4 h-4" />
-            </Button>
-          </InviteDialog>
+          <>
+            <CommunitySettingsDialog community={community} onUpdated={onCommunityUpdated || (() => {})}>
+              <Button variant="ghost" size="icon" className="w-8 h-8" title="Settings">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </CommunitySettingsDialog>
+            <InviteDialog communityId={community.id} communityName={community.name}>
+              <Button variant="ghost" size="icon" className="w-8 h-8" title="Invite">
+                <Link2 className="w-4 h-4" />
+              </Button>
+            </InviteDialog>
+          </>
         )}
         <Button
           variant="ghost"
