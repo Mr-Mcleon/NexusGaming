@@ -77,6 +77,27 @@ export const CommunitySettingsDialog = ({
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      // Delete community (cascading deletes should handle members, channels, messages)
+      const { error } = await (supabase
+        .from("communities" as any)
+        .delete()
+        .eq("id", community.id) as any);
+
+      if (error) throw error;
+      toast.success("Community deleted");
+      setOpen(false);
+      onDeleted?.();
+    } catch (err) {
+      console.error("Failed to delete community:", err);
+      toast.error("Failed to delete community");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Reset form when dialog opens
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
