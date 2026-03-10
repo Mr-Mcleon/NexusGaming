@@ -57,7 +57,7 @@ interface CommunityViewProps {
   onBack: () => void;
 }
 
-export const CommunityView = ({ community, onBack }: CommunityViewProps) => {
+export const CommunityView = ({ community, onBack, onCommunityUpdated }: CommunityViewProps & { onCommunityUpdated?: () => void }) => {
   const { user } = useAuth();
   const { channels, members, loading, createChannel, updateMemberRole, kickMember } = useCommunityDetails(community.id);
   const { isOnline } = usePresence();
