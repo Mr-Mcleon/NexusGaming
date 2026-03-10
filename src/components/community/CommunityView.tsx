@@ -102,7 +102,7 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
         </div>
         {isOwnerOrAdmin && (
           <>
-            <CommunitySettingsDialog community={community} onUpdated={onCommunityUpdated || (() => {})}>
+            <CommunitySettingsDialog community={community} onUpdated={onCommunityUpdated || (() => {})} onDeleted={() => { onCommunityUpdated?.(); onBack(); }}>
               <Button variant="ghost" size="icon" className="w-8 h-8" title="Settings">
                 <Settings className="w-4 h-4" />
               </Button>
