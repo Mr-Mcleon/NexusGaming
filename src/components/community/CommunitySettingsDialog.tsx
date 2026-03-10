@@ -35,6 +35,7 @@ const ICONS = ["🎮", "🏆", "⚔️", "🎯", "🚀", "💎", "🔥", "🎵",
 interface CommunitySettingsDialogProps {
   community: Community;
   onUpdated: () => void;
+  onDeleted?: () => void;
   children: React.ReactNode;
 }
 
