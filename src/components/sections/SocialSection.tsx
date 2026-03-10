@@ -88,7 +88,7 @@ export const SocialSection = () => {
   if (activeCommunity) {
     return (
       <div className="h-full">
-        <CommunityView community={activeCommunity} onBack={() => setActiveCommunity(null)} />
+        <CommunityView community={activeCommunity} onBack={() => setActiveCommunity(null)} onCommunityUpdated={refreshCommunities} />
       </div>
     );
   }
