@@ -51,6 +51,7 @@ export const CommunitySettingsDialog = ({
   const [icon, setIcon] = useState(community.icon);
   const [isPublic, setIsPublic] = useState(community.is_public);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) return;
