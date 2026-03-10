@@ -101,11 +101,18 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
           <p className="text-xs text-muted-foreground">{members.length} members</p>
         </div>
         {isOwnerOrAdmin && (
-          <InviteDialog communityId={community.id} communityName={community.name}>
-            <Button variant="ghost" size="icon" className="w-8 h-8" title="Invite">
-              <Link2 className="w-4 h-4" />
-            </Button>
-          </InviteDialog>
+          <>
+            <CommunitySettingsDialog community={community} onUpdated={onCommunityUpdated || (() => {})}>
+              <Button variant="ghost" size="icon" className="w-8 h-8" title="Settings">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </CommunitySettingsDialog>
+            <InviteDialog communityId={community.id} communityName={community.name}>
+              <Button variant="ghost" size="icon" className="w-8 h-8" title="Invite">
+                <Link2 className="w-4 h-4" />
+              </Button>
+            </InviteDialog>
+          </>
         )}
         <Button
           variant="ghost"
