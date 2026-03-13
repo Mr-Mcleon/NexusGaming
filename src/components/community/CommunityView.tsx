@@ -22,6 +22,8 @@ import {
   ShieldCheck,
   ShieldOff,
   Settings,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -59,13 +61,15 @@ interface CommunityViewProps {
 
 export const CommunityView = ({ community, onBack, onCommunityUpdated }: CommunityViewProps & { onCommunityUpdated?: () => void }) => {
   const { user } = useAuth();
-  const { channels, members, loading, createChannel, updateMemberRole, kickMember } = useCommunityDetails(community.id);
+  const { channels, members, loading, createChannel, renameChannel, deleteChannel, updateMemberRole, kickMember } = useCommunityDetails(community.id);
   const { isOnline } = usePresence();
   const [activeChannel, setActiveChannel] = useState<CommunityChannel | null>(null);
   const [showMembers, setShowMembers] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelType, setNewChannelType] = useState<"text" | "voice">("text");
   const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
+  const [editingChannelName, setEditingChannelName] = useState("");
 
   const isOwnerOrAdmin = members.some(
     (m) => m.user_id === user?.id && (m.role === "owner" || m.role === "admin")
@@ -177,23 +181,75 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
 
             <div className="space-y-0.5">
               {channels.map((ch) => (
-                <button
-                  key={ch.id}
-                  onClick={() => setActiveChannel(ch)}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
-                    activeChannel?.id === ch.id
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  )}
-                >
-                  {ch.type === "text" ? (
-                    <Hash className="w-4 h-4 shrink-0" />
+                <div key={ch.id} className="group flex items-center">
+                  {editingChannelId === ch.id ? (
+                    <form
+                      className="flex-1 flex items-center gap-1 px-2 py-1"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (editingChannelName.trim() && editingChannelName.trim() !== ch.name) {
+                          await renameChannel(ch.id, editingChannelName.trim());
+                        }
+                        setEditingChannelId(null);
+                      }}
+                    >
+                      <Input
+                        value={editingChannelName}
+                        onChange={(e) => setEditingChannelName(e.target.value)}
+                        className="h-6 text-xs px-1"
+                        autoFocus
+                        onBlur={() => setEditingChannelId(null)}
+                        onKeyDown={(e) => { if (e.key === "Escape") setEditingChannelId(null); }}
+                      />
+                    </form>
                   ) : (
-                    <Volume2 className="w-4 h-4 shrink-0" />
+                    <>
+                      <button
+                        onClick={() => setActiveChannel(ch)}
+                        className={cn(
+                          "flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors min-w-0",
+                          activeChannel?.id === ch.id
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        )}
+                      >
+                        {ch.type === "text" ? (
+                          <Hash className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <Volume2 className="w-4 h-4 shrink-0" />
+                        )}
+                        <span className="truncate">{ch.name}</span>
+                      </button>
+                      {isOwnerOrAdmin && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 mr-1 text-muted-foreground hover:text-foreground">
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-36">
+                            <DropdownMenuItem onClick={() => {
+                              setEditingChannelId(ch.id);
+                              setEditingChannelName(ch.name);
+                            }}>
+                              <Pencil className="w-3 h-3 mr-2" /> Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={async () => {
+                                if (activeChannel?.id === ch.id) setActiveChannel(null);
+                                await deleteChannel(ch.id);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </>
                   )}
-                  <span className="truncate">{ch.name}</span>
-                </button>
+                </div>
               ))}
             </div>
           </div>

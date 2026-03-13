@@ -274,5 +274,37 @@ export const useCommunityDetails = (communityId: string | null) => {
     }
   };
 
-  return { channels, members, loading, createChannel, updateMemberRole, kickMember, refreshDetails: fetchDetails };
+  const renameChannel = async (channelId: string, newName: string) => {
+    try {
+      const { error } = await (supabase
+        .from("community_channels" as any)
+        .update({ name: newName } as any)
+        .eq("id", channelId) as any);
+
+      if (error) throw error;
+      toast.success(`Channel renamed to #${newName}`);
+      await fetchDetails();
+    } catch (err) {
+      console.error("Failed to rename channel:", err);
+      toast.error("Failed to rename channel");
+    }
+  };
+
+  const deleteChannel = async (channelId: string) => {
+    try {
+      const { error } = await (supabase
+        .from("community_channels" as any)
+        .delete()
+        .eq("id", channelId) as any);
+
+      if (error) throw error;
+      toast.success("Channel deleted");
+      await fetchDetails();
+    } catch (err) {
+      console.error("Failed to delete channel:", err);
+      toast.error("Failed to delete channel");
+    }
+  };
+
+  return { channels, members, loading, createChannel, renameChannel, deleteChannel, updateMemberRole, kickMember, refreshDetails: fetchDetails };
 };
