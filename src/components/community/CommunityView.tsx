@@ -247,10 +247,7 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
-                              onClick={async () => {
-                                if (activeChannel?.id === ch.id) setActiveChannel(null);
-                                await deleteChannel(ch.id);
-                              }}
+                              onClick={() => setChannelToDelete(ch)}
                             >
                               <Trash2 className="w-3 h-3 mr-2" /> Delete
                             </DropdownMenuItem>
