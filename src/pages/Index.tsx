@@ -35,6 +35,8 @@ const Index = () => {
         return <CloudSection />;
       case "social":
         return <SocialSection />;
+      case "developer":
+        return <DeveloperSection />;
       case "downloads":
         return (
           <div className="flex items-center justify-center h-full">

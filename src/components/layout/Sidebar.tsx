@@ -9,6 +9,7 @@ import {
   Download,
   Trophy,
   Zap,
+  Code2,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
