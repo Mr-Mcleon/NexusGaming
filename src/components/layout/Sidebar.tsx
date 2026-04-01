@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { icon: Users, label: "Social", id: "social", badge: 3 },
   { icon: Download, label: "Downloads", id: "downloads", badge: 2 },
   { icon: Trophy, label: "Achievements", id: "achievements" },
+  { icon: Code2, label: "Developer", id: "developer" },
 ];
 
 interface SidebarProps {
