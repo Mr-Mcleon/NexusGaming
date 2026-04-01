@@ -279,7 +279,7 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
   const [messageInput, setMessageInput] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const conversation = conversations.find(c => c.id === conversationId);
