@@ -62,7 +62,6 @@ export const DeveloperSection = () => {
       setStats([
         { title: "Total Users", value: profilesRes.count ?? 0, icon: Users, description: "Registered accounts", trend: "+12%" },
         { title: "Games", value: gamesRes.count ?? 0, icon: Database, description: "In catalog", trend: "+5%" },
-        { title: "Communities", value: communitiesRes.count ?? 0, icon: Users, description: "Active groups", trend: "+8%" },
         { title: "Activities", value: activitiesRes.count ?? 0, icon: Activity, description: "Feed entries", trend: "+23%" },
       ]);
 
