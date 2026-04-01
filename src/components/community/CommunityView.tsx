@@ -43,6 +43,16 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { InviteDialog } from "@/components/community/InviteDialog";
 import { CommunitySettingsDialog } from "@/components/community/CommunitySettingsDialog";
 import {
@@ -70,6 +80,7 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
   const [editingChannelName, setEditingChannelName] = useState("");
+  const [channelToDelete, setChannelToDelete] = useState<CommunityChannel | null>(null);
 
   const isOwnerOrAdmin = members.some(
     (m) => m.user_id === user?.id && (m.role === "owner" || m.role === "admin")
@@ -237,10 +248,7 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
-                              onClick={async () => {
-                                if (activeChannel?.id === ch.id) setActiveChannel(null);
-                                await deleteChannel(ch.id);
-                              }}
+                              onClick={() => setChannelToDelete(ch)}
                             >
                               <Trash2 className="w-3 h-3 mr-2" /> Delete
                             </DropdownMenuItem>
@@ -621,6 +629,31 @@ const ChannelVoiceChat = ({
           </>
         )}
       </div>
+      <AlertDialog open={!!channelToDelete} onOpenChange={(open) => !open && setChannelToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete channel</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-semibold">#{channelToDelete?.name}</span>? All messages in this channel will be permanently lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (channelToDelete) {
+                  if (activeChannel?.id === channelToDelete.id) setActiveChannel(null);
+                  await deleteChannel(channelToDelete.id);
+                  setChannelToDelete(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
