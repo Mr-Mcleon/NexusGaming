@@ -53,10 +53,9 @@ export const DeveloperSection = () => {
 
   const fetchStats = async () => {
     try {
-      const [profilesRes, gamesRes, communitiesRes, activitiesRes] = await Promise.all([
+      const [profilesRes, gamesRes, activitiesRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("games").select("id", { count: "exact", head: true }),
-        supabase.from("communities").select("id", { count: "exact", head: true }),
         supabase.from("activity_feed").select("id", { count: "exact", head: true }),
       ]);
 
