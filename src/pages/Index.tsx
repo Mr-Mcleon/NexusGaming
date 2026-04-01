@@ -7,6 +7,7 @@ import { LibrarySection } from "@/components/sections/LibrarySection";
 import { StoreSection } from "@/components/sections/StoreSection";
 import { CloudSection } from "@/components/sections/CloudSection";
 import { SocialSection } from "@/components/sections/SocialSection";
+import { DeveloperSection } from "@/components/sections/DeveloperSection";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFriendActivityAlerts } from "@/hooks/useFriendActivityAlerts";
@@ -34,6 +35,8 @@ const Index = () => {
         return <CloudSection />;
       case "social":
         return <SocialSection />;
+      case "developer":
+        return <DeveloperSection />;
       case "downloads":
         return (
           <div className="flex items-center justify-center h-full">

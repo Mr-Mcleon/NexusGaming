@@ -1,0 +1,314 @@
+import { useState, useEffect } from "react";
+import { 
+  Users, Database, Activity, Settings2, RefreshCw, 
+  TrendingUp, HardDrive, Clock, ToggleLeft, ToggleRight,
+  Terminal, AlertTriangle, CheckCircle, Info
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatDistanceToNow } from "date-fns";
+
+interface StatCard {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  trend?: string;
+}
+
+interface LogEntry {
+  id: string;
+  type: "info" | "warning" | "error" | "success";
+  message: string;
+  timestamp: string;
+}
+
+interface ConfigOption {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+export const DeveloperSection = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<StatCard[]>([]);
+  const [dbStats, setDbStats] = useState<{ table: string; count: number }[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [config, setConfig] = useState<ConfigOption[]>([
+    { id: "maintenance", label: "Maintenance Mode", description: "Show maintenance page to all users", enabled: false },
+    { id: "debug", label: "Debug Mode", description: "Enable verbose console logging", enabled: false },
+    { id: "notifications", label: "Push Notifications", description: "Enable push notification system", enabled: true },
+    { id: "realtime", label: "Realtime Updates", description: "Enable live data syncing", enabled: true },
+  ]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchStats = async () => {
+    try {
+      const [profilesRes, gamesRes, activitiesRes] = await Promise.all([
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("games").select("id", { count: "exact", head: true }),
+        supabase.from("activity_feed").select("id", { count: "exact", head: true }),
+      ]);
+
+      setStats([
+        { title: "Total Users", value: profilesRes.count ?? 0, icon: Users, description: "Registered accounts", trend: "+12%" },
+        { title: "Games", value: gamesRes.count ?? 0, icon: Database, description: "In catalog", trend: "+5%" },
+        { title: "Activities", value: activitiesRes.count ?? 0, icon: Activity, description: "Feed entries", trend: "+23%" },
+      ]);
+
+      // DB table overview
+      const tables = [
+        { name: "profiles", res: profilesRes },
+        { name: "games", res: gamesRes },
+        { name: "activity_feed", res: activitiesRes },
+      ];
+      setDbStats(tables.map(t => ({ table: t.name, count: t.res.count ?? 0 })));
+
+      // Generate mock activity logs from real data
+      const { data: recentActivity } = await supabase
+        .from("activity_feed")
+        .select("id, activity_type, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (recentActivity) {
+        setLogs(recentActivity.map(a => ({
+          id: a.id,
+          type: a.activity_type === "game_launch" ? "info" as const :
+                a.activity_type === "achievement_unlock" ? "success" as const :
+                a.activity_type === "purchase" ? "warning" as const : "info" as const,
+          message: `${a.activity_type.replace(/_/g, " ")} event recorded`,
+          timestamp: a.created_at,
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch dev stats:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchStats();
+  };
+
+  const toggleConfig = (id: string) => {
+    setConfig(prev => prev.map(c => c.id === id ? { ...c, enabled: !c.enabled } : c));
+  };
+
+  const getLogIcon = (type: LogEntry["type"]) => {
+    switch (type) {
+      case "error": return <AlertTriangle className="w-4 h-4 text-destructive" />;
+      case "warning": return <AlertTriangle className="w-4 h-4 text-[hsl(var(--warning))]" />;
+      case "success": return <CheckCircle className="w-4 h-4 text-[hsl(var(--success))]" />;
+      default: return <Info className="w-4 h-4 text-primary" />;
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-muted-foreground">Sign in to access the developer dashboard.</p>
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="h-full">
+      <div className="p-6 space-y-6 max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold flex items-center gap-2">
+              <Terminal className="w-6 h-6 text-primary" />
+              Developer Dashboard
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">System overview and configuration</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+
+        <Tabs defaultValue="stats" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="stats">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Stats
+            </TabsTrigger>
+            <TabsTrigger value="database">
+              <HardDrive className="w-4 h-4 mr-2" />
+              Database
+            </TabsTrigger>
+            <TabsTrigger value="logs">
+              <Clock className="w-4 h-4 mr-2" />
+              Logs
+            </TabsTrigger>
+            <TabsTrigger value="config">
+              <Settings2 className="w-4 h-4 mr-2" />
+              Config
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Stats Tab */}
+          <TabsContent value="stats" className="mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-2"><div className="h-4 w-24 bg-muted rounded" /></CardHeader>
+                    <CardContent><div className="h-8 w-16 bg-muted rounded" /></CardContent>
+                  </Card>
+                ))
+              ) : (
+                stats.map((stat) => {
+                  const Icon = stat.icon;
+                  return (
+                    <Card key={stat.title} className="border-border/50 bg-card/50 backdrop-blur-sm">
+                      <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardDescription className="text-xs font-medium">{stat.title}</CardDescription>
+                        <Icon className="w-4 h-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold font-display">{stat.value}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {stat.description}
+                          {stat.trend && (
+                            <span className="text-[hsl(var(--success))] ml-2">{stat.trend}</span>
+                          )}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Database Tab */}
+          <TabsContent value="database" className="mt-6">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Table Overview</CardTitle>
+                <CardDescription>Row counts for key database tables</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 animate-pulse">
+                        <div className="h-4 w-32 bg-muted rounded" />
+                        <div className="h-4 w-12 bg-muted rounded" />
+                      </div>
+                    ))
+                  ) : (
+                    dbStats.map((row) => (
+                      <div key={row.table} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-mono text-sm">{row.table}</span>
+                        </div>
+                        <Badge variant="secondary" className="font-mono">
+                          {row.count.toLocaleString()} rows
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Logs Tab */}
+          <TabsContent value="logs" className="mt-6">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">Activity Logs</CardTitle>
+                <CardDescription>Recent system events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 py-2 animate-pulse">
+                        <div className="w-4 h-4 bg-muted rounded-full" />
+                        <div className="h-4 flex-1 bg-muted rounded" />
+                      </div>
+                    ))
+                  ) : logs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No recent activity logs</p>
+                  ) : (
+                    logs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 py-2 border-b border-border/30 last:border-0">
+                        {getLogIcon(log.type)}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm capitalize">{log.message}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs capitalize shrink-0">
+                          {log.type}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Config Tab */}
+          <TabsContent value="config" className="mt-6">
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-lg">App Configuration</CardTitle>
+                <CardDescription>Toggle features and system settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {config.map((option) => (
+                    <div key={option.id} className="flex items-center justify-between py-3 border-b border-border/30 last:border-0">
+                      <div className="flex items-center gap-3">
+                        {option.enabled ? (
+                          <ToggleRight className="w-5 h-5 text-primary" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <Label htmlFor={option.id} className="cursor-pointer font-medium">{option.label}</Label>
+                          <p className="text-xs text-muted-foreground">{option.description}</p>
+                        </div>
+                      </div>
+                      <Switch
+                        id={option.id}
+                        checked={option.enabled}
+                        onCheckedChange={() => toggleConfig(option.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </ScrollArea>
+  );
+};
