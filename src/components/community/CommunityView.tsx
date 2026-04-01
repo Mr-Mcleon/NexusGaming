@@ -654,6 +654,7 @@ const ChannelVoiceChat = ({
             </Button>
           </>
         )}
+      </div>
     </div>
   );
 };
