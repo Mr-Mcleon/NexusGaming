@@ -80,6 +80,7 @@ export const CommunityView = ({ community, onBack, onCommunityUpdated }: Communi
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
   const [editingChannelName, setEditingChannelName] = useState("");
+  const [channelToDelete, setChannelToDelete] = useState<CommunityChannel | null>(null);
 
   const isOwnerOrAdmin = members.some(
     (m) => m.user_id === user?.id && (m.role === "owner" || m.role === "admin")
