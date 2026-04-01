@@ -69,7 +69,6 @@ export const DeveloperSection = () => {
       const tables = [
         { name: "profiles", res: profilesRes },
         { name: "games", res: gamesRes },
-        { name: "communities", res: communitiesRes },
         { name: "activity_feed", res: activitiesRes },
       ];
       setDbStats(tables.map(t => ({ table: t.name, count: t.res.count ?? 0 })));
