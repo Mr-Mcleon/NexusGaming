@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   Users, Database, Activity, Settings2, RefreshCw, 
   TrendingUp, HardDrive, Clock, ToggleLeft, ToggleRight,
-  Terminal, AlertTriangle, CheckCircle, Info, Search
+  Terminal, AlertTriangle, CheckCircle, Info, Search, ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
