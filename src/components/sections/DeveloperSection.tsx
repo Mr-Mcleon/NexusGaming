@@ -213,14 +213,34 @@ export const DeveloperSection = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Table Overview</CardTitle>
                 <CardDescription>Row counts for key database tables</CardDescription>
-                <div className="relative mt-2">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Filter tables..."
-                    value={dbFilter}
-                    onChange={(e) => setDbFilter(e.target.value)}
-                    className="pl-9 h-9"
-                  />
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter tables..."
+                      value={dbFilter}
+                      onChange={(e) => setDbFilter(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0"
+                    onClick={() =>
+                      setDbSort((prev) =>
+                        prev.key === "table"
+                          ? prev.dir === "asc" ? { key: "table", dir: "desc" } : { key: "count", dir: "desc" }
+                          : prev.dir === "desc" ? { key: "count", dir: "asc" } : { key: "table", dir: "asc" }
+                      )
+                    }
+                  >
+                    {dbSort.key === "table" ? (
+                      <>Name {dbSort.dir === "asc" ? <ArrowUp className="w-3.5 h-3.5 ml-1" /> : <ArrowDown className="w-3.5 h-3.5 ml-1" />}</>
+                    ) : (
+                      <>Rows {dbSort.dir === "desc" ? <ArrowDown className="w-3.5 h-3.5 ml-1" /> : <ArrowUp className="w-3.5 h-3.5 ml-1" />}</>
+                    )}
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
