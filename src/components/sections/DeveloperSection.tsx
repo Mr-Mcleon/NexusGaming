@@ -255,6 +255,11 @@ export const DeveloperSection = () => {
                   ) : (
                     dbStats
                       .filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase()))
+                      .sort((a, b) => {
+                        const mul = dbSort.dir === "asc" ? 1 : -1;
+                        if (dbSort.key === "table") return mul * a.table.localeCompare(b.table);
+                        return mul * (a.count - b.count);
+                      })
                       .map((row) => (
                         <div key={row.table} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
                           <div className="flex items-center gap-2">
