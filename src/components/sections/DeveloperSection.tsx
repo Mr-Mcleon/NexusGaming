@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { 
   Users, Database, Activity, Settings2, RefreshCw, 
   TrendingUp, HardDrive, Clock, ToggleLeft, ToggleRight,
-  Terminal, AlertTriangle, CheckCircle, Info
+  Terminal, AlertTriangle, CheckCircle, Info, Search
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +42,7 @@ export const DeveloperSection = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<StatCard[]>([]);
   const [dbStats, setDbStats] = useState<{ table: string; count: number }[]>([]);
+  const [dbFilter, setDbFilter] = useState("");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [config, setConfig] = useState<ConfigOption[]>([
     { id: "maintenance", label: "Maintenance Mode", description: "Show maintenance page to all users", enabled: false },
@@ -210,6 +212,15 @@ export const DeveloperSection = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Table Overview</CardTitle>
                 <CardDescription>Row counts for key database tables</CardDescription>
+                <div className="relative mt-2">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filter tables..."
+                    value={dbFilter}
+                    onChange={(e) => setDbFilter(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -221,17 +232,22 @@ export const DeveloperSection = () => {
                       </div>
                     ))
                   ) : (
-                    dbStats.map((row) => (
-                      <div key={row.table} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
-                        <div className="flex items-center gap-2">
-                          <Database className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-mono text-sm">{row.table}</span>
+                    dbStats
+                      .filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase()))
+                      .map((row) => (
+                        <div key={row.table} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <Database className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-mono text-sm">{row.table}</span>
+                          </div>
+                          <Badge variant="secondary" className="font-mono">
+                            {row.count.toLocaleString()} rows
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="font-mono">
-                          {row.count.toLocaleString()} rows
-                        </Badge>
-                      </div>
-                    ))
+                      ))
+                  )}
+                  {!loading && dbStats.filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase())).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No tables match "{dbFilter}"</p>
                   )}
                 </div>
               </CardContent>
