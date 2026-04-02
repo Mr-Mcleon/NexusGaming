@@ -53,25 +53,28 @@ export const DeveloperSection = () => {
 
   const fetchStats = async () => {
     try {
-      const [profilesRes, gamesRes, activitiesRes] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("games").select("id", { count: "exact", head: true }),
-        supabase.from("activity_feed").select("id", { count: "exact", head: true }),
-      ]);
+      const tableNames = [
+        "profiles", "games", "activity_feed", "achievements", "user_achievements",
+        "user_library", "friendships", "blocked_users", "conversations", "messages",
+        "cloud_clips", "game_reviews", "game_screenshots", "sale_notifications",
+        "user_settings", "wishlist", "wishlist_price_alerts", "wishlist_shares",
+        "conversation_participants", "typing_indicators",
+      ] as const;
+
+      const results = await Promise.all(
+        tableNames.map(t => supabase.from(t).select("id", { count: "exact", head: true }))
+      );
+
+      const tableCounts = tableNames.map((name, i) => ({ table: name, count: results[i].count ?? 0 }));
+      setDbStats(tableCounts);
+
+      const countFor = (name: string) => tableCounts.find(t => t.table === name)?.count ?? 0;
 
       setStats([
-        { title: "Total Users", value: profilesRes.count ?? 0, icon: Users, description: "Registered accounts", trend: "+12%" },
-        { title: "Games", value: gamesRes.count ?? 0, icon: Database, description: "In catalog", trend: "+5%" },
-        { title: "Activities", value: activitiesRes.count ?? 0, icon: Activity, description: "Feed entries", trend: "+23%" },
+        { title: "Total Users", value: countFor("profiles"), icon: Users, description: "Registered accounts", trend: "+12%" },
+        { title: "Games", value: countFor("games"), icon: Database, description: "In catalog", trend: "+5%" },
+        { title: "Activities", value: countFor("activity_feed"), icon: Activity, description: "Feed entries", trend: "+23%" },
       ]);
-
-      // DB table overview
-      const tables = [
-        { name: "profiles", res: profilesRes },
-        { name: "games", res: gamesRes },
-        { name: "activity_feed", res: activitiesRes },
-      ];
-      setDbStats(tables.map(t => ({ table: t.name, count: t.res.count ?? 0 })));
 
       // Generate mock activity logs from real data
       const { data: recentActivity } = await supabase
