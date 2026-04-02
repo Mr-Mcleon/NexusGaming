@@ -276,6 +276,14 @@ export const DeveloperSection = () => {
                     <p className="text-sm text-muted-foreground text-center py-4">No tables match "{dbFilter}"</p>
                   )}
                 </div>
+                {!loading && dbStats.length > 0 && (
+                  <div className="flex justify-between items-center pt-4 mt-3 border-t border-border">
+                    <span className="text-sm font-medium text-muted-foreground">{dbStats.length} tables</span>
+                    <Badge className="font-mono">
+                      {dbStats.reduce((sum, r) => sum + r.count, 0).toLocaleString()} total rows
+                    </Badge>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
