@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   Users, Database, Activity, Settings2, RefreshCw, 
   TrendingUp, HardDrive, Clock, ToggleLeft, ToggleRight,
-  Terminal, AlertTriangle, CheckCircle, Info, Search
+  Terminal, AlertTriangle, CheckCircle, Info, Search, ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ export const DeveloperSection = () => {
   const [stats, setStats] = useState<StatCard[]>([]);
   const [dbStats, setDbStats] = useState<{ table: string; count: number }[]>([]);
   const [dbFilter, setDbFilter] = useState("");
+  const [dbSort, setDbSort] = useState<{ key: "table" | "count"; dir: "asc" | "desc" }>({ key: "table", dir: "asc" });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [config, setConfig] = useState<ConfigOption[]>([
     { id: "maintenance", label: "Maintenance Mode", description: "Show maintenance page to all users", enabled: false },
@@ -212,14 +213,34 @@ export const DeveloperSection = () => {
               <CardHeader>
                 <CardTitle className="text-lg">Table Overview</CardTitle>
                 <CardDescription>Row counts for key database tables</CardDescription>
-                <div className="relative mt-2">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Filter tables..."
-                    value={dbFilter}
-                    onChange={(e) => setDbFilter(e.target.value)}
-                    className="pl-9 h-9"
-                  />
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Filter tables..."
+                      value={dbFilter}
+                      onChange={(e) => setDbFilter(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 shrink-0"
+                    onClick={() =>
+                      setDbSort((prev) =>
+                        prev.key === "table"
+                          ? prev.dir === "asc" ? { key: "table", dir: "desc" } : { key: "count", dir: "desc" }
+                          : prev.dir === "desc" ? { key: "count", dir: "asc" } : { key: "table", dir: "asc" }
+                      )
+                    }
+                  >
+                    {dbSort.key === "table" ? (
+                      <>Name {dbSort.dir === "asc" ? <ArrowUp className="w-3.5 h-3.5 ml-1" /> : <ArrowDown className="w-3.5 h-3.5 ml-1" />}</>
+                    ) : (
+                      <>Rows {dbSort.dir === "desc" ? <ArrowDown className="w-3.5 h-3.5 ml-1" /> : <ArrowUp className="w-3.5 h-3.5 ml-1" />}</>
+                    )}
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -234,6 +255,11 @@ export const DeveloperSection = () => {
                   ) : (
                     dbStats
                       .filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase()))
+                      .sort((a, b) => {
+                        const mul = dbSort.dir === "asc" ? 1 : -1;
+                        if (dbSort.key === "table") return mul * a.table.localeCompare(b.table);
+                        return mul * (a.count - b.count);
+                      })
                       .map((row) => (
                         <div key={row.table} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
                           <div className="flex items-center gap-2">
