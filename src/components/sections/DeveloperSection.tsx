@@ -43,6 +43,7 @@ export const DeveloperSection = () => {
   const [stats, setStats] = useState<StatCard[]>([]);
   const [dbStats, setDbStats] = useState<{ table: string; count: number }[]>([]);
   const [dbFilter, setDbFilter] = useState("");
+  const [dbSort, setDbSort] = useState<{ key: "table" | "count"; dir: "asc" | "desc" }>({ key: "table", dir: "asc" });
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [config, setConfig] = useState<ConfigOption[]>([
     { id: "maintenance", label: "Maintenance Mode", description: "Show maintenance page to all users", enabled: false },
