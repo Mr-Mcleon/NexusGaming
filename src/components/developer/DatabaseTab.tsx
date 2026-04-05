@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Database, Search, ArrowUp, ArrowDown, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,9 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     a.download = `database-stats-${timestamp}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully", {
+      description: `${filteredSorted.length} tables exported`,
+    });
   };
 
   return (
