@@ -37,6 +37,9 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     a.download = `database-stats-${timestamp}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("CSV exported successfully", {
+      description: `${filteredSorted.length} tables exported`,
+    });
   };
 
   return (
