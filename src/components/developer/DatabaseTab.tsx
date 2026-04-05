@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Database, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { Database, Search, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,13 +23,31 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
       return mul * (a.count - b.count);
     });
 
+  const exportCsv = () => {
+    const header = "Table,Row Count";
+    const rows = filteredSorted.map(r => `${r.table},${r.count}`);
+    const total = `Total,${filteredSorted.reduce((s, r) => s + r.count, 0)}`;
+    const csv = [header, ...rows, "", total].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "database-stats.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4">
       {/* Bar Chart */}
       {!loading && dbStats.length > 0 && (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Row Distribution</CardTitle>
+            <Button variant="outline" size="sm" onClick={exportCsv}>
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
