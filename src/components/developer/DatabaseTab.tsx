@@ -23,6 +23,20 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
       return mul * (a.count - b.count);
     });
 
+  const exportCsv = () => {
+    const header = "Table,Row Count";
+    const rows = filteredSorted.map(r => `${r.table},${r.count}`);
+    const total = `Total,${filteredSorted.reduce((s, r) => s + r.count, 0)}`;
+    const csv = [header, ...rows, "", total].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "database-stats.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4">
       {/* Bar Chart */}
