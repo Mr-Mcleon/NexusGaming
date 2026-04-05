@@ -32,7 +32,8 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "database-stats.csv";
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    a.download = `database-stats-${timestamp}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
