@@ -25,21 +25,30 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     });
 
   const exportCsv = () => {
-    const header = "Table,Row Count";
-    const rows = filteredSorted.map(r => `${r.table},${r.count}`);
-    const total = `Total,${filteredSorted.reduce((s, r) => s + r.count, 0)}`;
-    const csv = [header, ...rows, "", total].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    a.download = `database-stats-${timestamp}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exported successfully", {
-      description: `${filteredSorted.length} tables exported`,
-    });
+    try {
+      if (filteredSorted.length === 0) {
+        toast.error("Nothing to export", { description: "No tables match the current filter" });
+        return;
+      }
+      const header = "Table,Row Count";
+      const rows = filteredSorted.map(r => `${r.table},${r.count}`);
+      const total = `Total,${filteredSorted.reduce((s, r) => s + r.count, 0)}`;
+      const csv = [header, ...rows, "", total].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      a.download = `database-stats-${timestamp}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully", {
+        description: `${filteredSorted.length} tables exported`,
+      });
+    } catch (err) {
+      console.error("CSV export failed:", err);
+      toast.error("Export failed", { description: "An unexpected error occurred while generating the CSV" });
+    }
   };
 
   return (
