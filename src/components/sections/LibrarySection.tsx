@@ -947,7 +947,7 @@ export const LibrarySection = () => {
                 key={option.id}
                 onClick={() => setFilter(option.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
+                  "flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap text-sm",
                   filter === option.id
                     ? "bg-primary/10 text-primary border border-primary/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
