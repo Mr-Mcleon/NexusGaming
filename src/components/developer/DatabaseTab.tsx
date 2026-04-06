@@ -110,6 +110,26 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     }
   };
 
+  const copyToClipboard = async () => {
+    try {
+      if (exportTargets.length === 0) {
+        toast.error("Nothing to copy", { description: "No tables selected or matching the filter" });
+        return;
+      }
+      const header = "Table\tRow Count";
+      const rows = exportTargets.map(r => `${r.table}\t${r.count}`);
+      const total = `Total\t${exportTargets.reduce((s, r) => s + r.count, 0)}`;
+      const text = [header, ...rows, "", total].join("\n");
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard", {
+        description: `${exportTargets.length} tables copied`,
+      });
+    } catch (err) {
+      console.error("Copy failed:", err);
+      toast.error("Copy failed", { description: "Could not copy to clipboard" });
+    }
+  };
+
   const handleExportClick = () => {
     if (exportTargets.length >= LARGE_EXPORT_THRESHOLD) {
       setShowExportConfirm(true);
