@@ -38,7 +38,7 @@ export const CloudSection = () => {
   return (
     <div className="h-full overflow-y-auto scrollbar-gaming">
       {/* Hero */}
-      <div className="relative overflow-hidden p-8 lg:p-12">
+      <div className="relative overflow-hidden p-4 md:p-8 lg:p-12">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--primary)/0.15),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,hsl(var(--accent)/0.1),transparent_50%)]" />
         
@@ -48,14 +48,14 @@ export const CloudSection = () => {
             <span className="font-medium">Cloud Gaming</span>
           </div>
           
-          <h1 className="font-display text-4xl lg:text-6xl font-bold mb-4">
+          <h1 className="font-display text-2xl md:text-4xl lg:text-6xl font-bold mb-4">
             Play Anywhere, <span className="gradient-text">Anytime</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Stream your favorite games on any device without downloads. Powered by cutting-edge cloud technology.
           </p>
           
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
             <Button variant="gaming" size="xl">
               <Play className="w-5 h-5" />
               Start Playing
@@ -83,7 +83,7 @@ export const CloudSection = () => {
         </div>
       </div>
 
-      <div className="p-6 space-y-8">
+      <div className="p-4 md:p-6 space-y-8">
         {/* Cloud Ready Games */}
         <section>
           <div className="flex items-center justify-between mb-4">
