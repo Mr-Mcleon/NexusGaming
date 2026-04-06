@@ -166,6 +166,10 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
                   {selectedTables.size} selected
                 </Badge>
               )}
+              <Button variant="outline" size="sm" onClick={copyToClipboard}>
+                <Copy className="w-4 h-4 mr-2" />
+                Copy
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExportClick}>
                 <Download className="w-4 h-4 mr-2" />
                 Export{selectedTables.size > 0 ? ` (${exportTargets.length})` : " All"}
