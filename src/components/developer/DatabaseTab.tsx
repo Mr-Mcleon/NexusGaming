@@ -64,14 +64,37 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     }
   };
 
+  const handleExportClick = () => {
+    if (filteredSorted.length >= LARGE_EXPORT_THRESHOLD) {
+      setShowExportConfirm(true);
+    } else {
+      exportCsv();
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <AlertDialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export {filteredSorted.length} tables?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to export data for {filteredSorted.length} tables ({filteredSorted.reduce((s, r) => s + r.count, 0).toLocaleString()} total rows) to a CSV file.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={exportCsv}>Export</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Bar Chart */}
       {!loading && dbStats.length > 0 && (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Row Distribution</CardTitle>
-            <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Button variant="outline" size="sm" onClick={handleExportClick}>
               <Download className="w-4 h-4 mr-2" />
               Export CSV
             </Button>
