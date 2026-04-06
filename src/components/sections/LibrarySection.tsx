@@ -676,7 +676,7 @@ export const LibrarySection = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-border/50">
+      <div className="flex-shrink-0 p-4 md:p-6 border-b border-border/50">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold mb-1">My Library</h1>
@@ -688,7 +688,7 @@ export const LibrarySection = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {/* On Sale Filter - Only show for wishlist */}
             {filter === "wishlist" && onSaleCount > 0 && (
               <button
@@ -910,7 +910,7 @@ export const LibrarySection = () => {
                 placeholder={filter === "wishlist" ? "Search wishlist..." : "Search library..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 h-10 pl-10 pr-4 bg-secondary/50 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all"
+                className="w-full md:w-64 h-10 pl-10 pr-4 bg-secondary/50 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all"
               />
             </div>
 
@@ -939,7 +939,7 @@ export const LibrarySection = () => {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-2 mt-4">
+        <div className="flex items-center gap-2 mt-4 overflow-x-auto scrollbar-gaming pb-1">
           {filterOptions.map((option) => {
             const Icon = option.icon;
             return (

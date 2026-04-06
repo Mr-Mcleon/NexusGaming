@@ -98,12 +98,12 @@ export const SocialSection = () => {
     <div className="h-full flex">
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-border/50">
+        <div className="p-4 md:p-6 border-b border-border/50">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="font-display text-2xl font-bold">Social</h1>
+            <h1 className="font-display text-xl md:text-2xl font-bold">Social</h1>
             <div className="flex items-center gap-2">
               <FriendRequestsDialog>
-                <Button variant="glass" className="relative">
+                <Button variant="glass" size="sm" className="relative">
                   <Bell className="w-4 h-4" />
                   Requests
                   {pendingRequests.length > 0 && (
@@ -114,16 +114,16 @@ export const SocialSection = () => {
                 </Button>
               </FriendRequestsDialog>
               <AddFriendDialog>
-                <Button variant="gaming">
+                <Button variant="gaming" size="sm">
                   <UserPlus className="w-4 h-4" />
-                  Add Friend
+                  <span className="hidden sm:inline">Add Friend</span>
                 </Button>
               </AddFriendDialog>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4 overflow-x-auto scrollbar-gaming pb-1">
             {[
               { id: "friends", label: "Friends", icon: Users, count: friendProfiles.length },
               { id: "activity", label: "Activity", icon: Activity, count: null },
@@ -135,7 +135,7 @@ export const SocialSection = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as "friends" | "activity" | "leaderboard" | "achievements" | "servers")}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
+                  "flex items-center gap-1.5 md:gap-2 px-3 py-2 rounded-lg transition-all duration-200 whitespace-nowrap text-sm",
                   activeTab === tab.id
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
