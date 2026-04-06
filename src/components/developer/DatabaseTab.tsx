@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Database, Search, ArrowUp, ArrowDown, Download, CheckSquare, Square, MinusSquare } from "lucide-react";
+import { Database, Search, ArrowUp, ArrowDown, Download, CheckSquare, Square, MinusSquare, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,26 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
     }
   };
 
+  const copyToClipboard = async () => {
+    try {
+      if (exportTargets.length === 0) {
+        toast.error("Nothing to copy", { description: "No tables selected or matching the filter" });
+        return;
+      }
+      const header = "Table\tRow Count";
+      const rows = exportTargets.map(r => `${r.table}\t${r.count}`);
+      const total = `Total\t${exportTargets.reduce((s, r) => s + r.count, 0)}`;
+      const text = [header, ...rows, "", total].join("\n");
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard", {
+        description: `${exportTargets.length} tables copied`,
+      });
+    } catch (err) {
+      console.error("Copy failed:", err);
+      toast.error("Copy failed", { description: "Could not copy to clipboard" });
+    }
+  };
+
   const handleExportClick = () => {
     if (exportTargets.length >= LARGE_EXPORT_THRESHOLD) {
       setShowExportConfirm(true);
@@ -146,6 +166,10 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
                   {selectedTables.size} selected
                 </Badge>
               )}
+              <Button variant="outline" size="sm" onClick={copyToClipboard}>
+                <Copy className="w-4 h-4 mr-2" />
+                Copy
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExportClick}>
                 <Download className="w-4 h-4 mr-2" />
                 Export{selectedTables.size > 0 ? ` (${exportTargets.length})` : " All"}
