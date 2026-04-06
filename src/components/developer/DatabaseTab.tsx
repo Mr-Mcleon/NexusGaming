@@ -25,6 +25,9 @@ interface DatabaseTabProps {
 export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
   const [dbFilter, setDbFilter] = useState("");
   const [dbSort, setDbSort] = useState<{ key: "table" | "count"; dir: "asc" | "desc" }>({ key: "table", dir: "asc" });
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
+
+  const LARGE_EXPORT_THRESHOLD = 10;
 
   const filteredSorted = dbStats
     .filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase()))
