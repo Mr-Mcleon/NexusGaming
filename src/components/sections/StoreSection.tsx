@@ -181,7 +181,7 @@ export const StoreSection = () => {
     <div className="h-full overflow-y-auto scrollbar-gaming">
       {/* Hero Banner */}
       {featuredGame && (
-        <div className="relative h-96 overflow-hidden">
+        <div className="relative h-64 md:h-96 overflow-hidden">
           <img
             src={featuredGame.cover_image_url || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800"}
             alt={featuredGame.title}
@@ -190,11 +190,11 @@ export const StoreSection = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-          <div className="absolute bottom-0 left-0 right-0 p-8">
-            <span className="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full mb-3 inline-block">
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
+            <span className="px-3 py-1 bg-primary/20 text-primary text-xs md:text-sm rounded-full mb-3 inline-block">
               Featured Game
             </span>
-            <h1 className="font-display text-4xl lg:text-5xl font-bold mb-3">{featuredGame.title}</h1>
+            <h1 className="font-display text-2xl md:text-4xl lg:text-5xl font-bold mb-2 md:mb-3">{featuredGame.title}</h1>
             <div className="flex items-center gap-4 mb-4">
               {featuredGame.rating && (
                 <div className="flex items-center gap-1">
@@ -208,7 +208,7 @@ export const StoreSection = () => {
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 md:gap-4">
               {featuredGame.sale_price !== null && featuredGame.sale_price < (featuredGame.price ?? 0) ? (
                 <>
                   <span className="text-xl text-muted-foreground line-through">${featuredGame.price}</span>
@@ -302,9 +302,9 @@ export const StoreSection = () => {
 
         {/* Free to Play Banner */}
         {freeGames.length > 0 && (
-          <section className="relative overflow-hidden rounded-2xl p-8 bg-gradient-to-r from-accent/20 via-primary/10 to-transparent border border-accent/20">
+          <section className="relative overflow-hidden rounded-2xl p-4 md:p-8 bg-gradient-to-r from-accent/20 via-primary/10 to-transparent border border-accent/20">
             <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
-            <div className="relative z-10 flex items-center justify-between">
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 text-accent mb-2">
                   <Gift className="w-5 h-5" />

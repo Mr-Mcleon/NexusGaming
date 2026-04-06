@@ -88,17 +88,17 @@ export const HomeSection = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="p-6 space-y-8 overflow-y-auto scrollbar-gaming h-full">
+    <div className="p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto scrollbar-gaming h-full">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/20 via-accent/10 to-transparent p-6 border border-primary/20">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/20 via-accent/10 to-transparent p-4 md:p-6 border border-primary/20">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
         <div className="relative z-10">
           <div className="flex items-center gap-2 text-primary mb-2">
             <Sparkles className="w-5 h-5" />
             <span className="text-sm font-medium uppercase tracking-wider">Welcome Back</span>
           </div>
-          <h1 className="font-display text-3xl lg:text-4xl font-bold mb-2">
-            Ready to <span className="gradient-text">Play</span>, NexusPlayer?
+          <h1 className="font-display text-2xl lg:text-4xl font-bold mb-2">
+            Ready to <span className="gradient-text">Play</span>?
           </h1>
           <p className="text-muted-foreground max-w-xl">
             You have 3 games ready to launch, 2 friends online, and 1 download in progress.

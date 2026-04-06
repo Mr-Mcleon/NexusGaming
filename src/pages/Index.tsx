@@ -80,7 +80,7 @@ const Index = () => {
         <Header />
         
         {/* Content */}
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 overflow-hidden relative pb-16 md:pb-0">
           {renderContent()}
           
           {/* Chat Toggle Button */}
@@ -88,10 +88,10 @@ const Index = () => {
             <Button
               variant="gaming"
               size="icon"
-              className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg z-50"
+              className="fixed bottom-20 md:bottom-6 right-4 md:right-6 w-12 h-12 md:w-14 md:h-14 rounded-full shadow-lg z-40"
               onClick={() => setChatOpen(true)}
             >
-              <MessageSquare className="w-6 h-6" />
+              <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />
               <span className="absolute top-0 right-0 w-3 h-3 bg-accent rounded-full border-2 border-background" />
             </Button>
           )}
