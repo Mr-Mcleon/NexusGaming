@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Database, Search, ArrowUp, ArrowDown, Download } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Database, Search, ArrowUp, ArrowDown, Download, CheckSquare, Square, MinusSquare } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   AlertDialog,
@@ -26,26 +27,71 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
   const [dbFilter, setDbFilter] = useState("");
   const [dbSort, setDbSort] = useState<{ key: "table" | "count"; dir: "asc" | "desc" }>({ key: "table", dir: "asc" });
   const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set());
 
   const LARGE_EXPORT_THRESHOLD = 10;
 
-  const filteredSorted = dbStats
-    .filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase()))
-    .sort((a, b) => {
-      const mul = dbSort.dir === "asc" ? 1 : -1;
-      if (dbSort.key === "table") return mul * a.table.localeCompare(b.table);
-      return mul * (a.count - b.count);
+  const filteredSorted = useMemo(() =>
+    dbStats
+      .filter((row) => row.table.toLowerCase().includes(dbFilter.toLowerCase()))
+      .sort((a, b) => {
+        const mul = dbSort.dir === "asc" ? 1 : -1;
+        if (dbSort.key === "table") return mul * a.table.localeCompare(b.table);
+        return mul * (a.count - b.count);
+      }),
+    [dbStats, dbFilter, dbSort]
+  );
+
+  const exportTargets = useMemo(() => {
+    if (selectedTables.size === 0) return filteredSorted;
+    return filteredSorted.filter((r) => selectedTables.has(r.table));
+  }, [filteredSorted, selectedTables]);
+
+  const toggleTable = (table: string) => {
+    setSelectedTables((prev) => {
+      const next = new Set(prev);
+      if (next.has(table)) next.delete(table);
+      else next.add(table);
+      return next;
     });
+  };
+
+  const toggleAll = () => {
+    const allFilteredNames = filteredSorted.map((r) => r.table);
+    const allSelected = allFilteredNames.every((t) => selectedTables.has(t));
+    if (allSelected) {
+      setSelectedTables((prev) => {
+        const next = new Set(prev);
+        allFilteredNames.forEach((t) => next.delete(t));
+        return next;
+      });
+    } else {
+      setSelectedTables((prev) => {
+        const next = new Set(prev);
+        allFilteredNames.forEach((t) => next.add(t));
+        return next;
+      });
+    }
+  };
+
+  const selectionState = useMemo(() => {
+    if (filteredSorted.length === 0) return "none" as const;
+    const allSelected = filteredSorted.every((r) => selectedTables.has(r.table));
+    const someSelected = filteredSorted.some((r) => selectedTables.has(r.table));
+    if (allSelected) return "all" as const;
+    if (someSelected) return "some" as const;
+    return "none" as const;
+  }, [filteredSorted, selectedTables]);
 
   const exportCsv = () => {
     try {
-      if (filteredSorted.length === 0) {
-        toast.error("Nothing to export", { description: "No tables match the current filter" });
+      if (exportTargets.length === 0) {
+        toast.error("Nothing to export", { description: "No tables selected or matching the filter" });
         return;
       }
       const header = "Table,Row Count";
-      const rows = filteredSorted.map(r => `${r.table},${r.count}`);
-      const total = `Total,${filteredSorted.reduce((s, r) => s + r.count, 0)}`;
+      const rows = exportTargets.map(r => `${r.table},${r.count}`);
+      const total = `Total,${exportTargets.reduce((s, r) => s + r.count, 0)}`;
       const csv = [header, ...rows, "", total].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -56,7 +102,7 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
       a.click();
       URL.revokeObjectURL(url);
       toast.success("CSV exported successfully", {
-        description: `${filteredSorted.length} tables exported`,
+        description: `${exportTargets.length} tables exported`,
       });
     } catch (err) {
       console.error("CSV export failed:", err);
@@ -65,7 +111,7 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
   };
 
   const handleExportClick = () => {
-    if (filteredSorted.length >= LARGE_EXPORT_THRESHOLD) {
+    if (exportTargets.length >= LARGE_EXPORT_THRESHOLD) {
       setShowExportConfirm(true);
     } else {
       exportCsv();
@@ -77,9 +123,9 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
       <AlertDialog open={showExportConfirm} onOpenChange={setShowExportConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Export {filteredSorted.length} tables?</AlertDialogTitle>
+            <AlertDialogTitle>Export {exportTargets.length} tables?</AlertDialogTitle>
             <AlertDialogDescription>
-              You're about to export data for {filteredSorted.length} tables ({filteredSorted.reduce((s, r) => s + r.count, 0).toLocaleString()} total rows) to a CSV file.
+              You're about to export data for {exportTargets.length} tables ({exportTargets.reduce((s, r) => s + r.count, 0).toLocaleString()} total rows) to a CSV file.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -94,10 +140,17 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Row Distribution</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleExportClick}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
+            <div className="flex items-center gap-2">
+              {selectedTables.size > 0 && (
+                <Badge variant="outline" className="font-mono text-xs">
+                  {selectedTables.size} selected
+                </Badge>
+              )}
+              <Button variant="outline" size="sm" onClick={handleExportClick}>
+                <Download className="w-4 h-4 mr-2" />
+                Export{selectedTables.size > 0 ? ` (${exportTargets.length})` : " All"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
@@ -116,7 +169,7 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-lg">Table Overview</CardTitle>
-          <CardDescription>Row counts for key database tables</CardDescription>
+          <CardDescription>Select tables to export, or export all</CardDescription>
           <div className="flex items-center gap-2 mt-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -146,9 +199,35 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
               )}
             </Button>
           </div>
+          {/* Select all / clear */}
+          {!loading && filteredSorted.length > 0 && (
+            <div className="flex items-center justify-between mt-2">
+              <button
+                onClick={toggleAll}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {selectionState === "all" ? (
+                  <CheckSquare className="w-3.5 h-3.5" />
+                ) : selectionState === "some" ? (
+                  <MinusSquare className="w-3.5 h-3.5" />
+                ) : (
+                  <Square className="w-3.5 h-3.5" />
+                )}
+                {selectionState === "all" ? "Deselect all" : "Select all"}
+              </button>
+              {selectedTables.size > 0 && (
+                <button
+                  onClick={() => setSelectedTables(new Set())}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear selection
+                </button>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex justify-between items-center py-2 animate-pulse">
@@ -158,8 +237,22 @@ export const DatabaseTab = ({ dbStats, loading }: DatabaseTabProps) => {
               ))
             ) : (
               filteredSorted.map((row) => (
-                <div key={row.table} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
+                <div
+                  key={row.table}
+                  onClick={() => toggleTable(row.table)}
+                  className={`flex justify-between items-center py-2 px-2 rounded-md border border-transparent cursor-pointer transition-colors ${
+                    selectedTables.has(row.table)
+                      ? "bg-primary/10 border-primary/20"
+                      : "hover:bg-muted/50"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedTables.has(row.table)}
+                      onCheckedChange={() => toggleTable(row.table)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4"
+                    />
                     <Database className="w-4 h-4 text-muted-foreground" />
                     <span className="font-mono text-sm">{row.table}</span>
                   </div>
