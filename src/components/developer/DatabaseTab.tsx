@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Database, Search, ArrowUp, ArrowDown, Download, CheckSquare, Square, MinusSquare } from "lucide-react";
+import { Database, Search, ArrowUp, ArrowDown, Download, CheckSquare, Square, MinusSquare, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
