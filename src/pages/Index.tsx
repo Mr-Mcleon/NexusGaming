@@ -98,7 +98,7 @@ const Index = () => {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Main Sidebar */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar activeTab={activeTab} onTabChange={(tab) => changeTab(tab)} />
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -107,7 +107,18 @@ const Index = () => {
         
         {/* Content */}
         <main ref={swipeRef as React.RefObject<HTMLElement>} className="flex-1 overflow-hidden relative pb-16 md:pb-0">
-          {renderContent()}
+          <div
+            key={transitionKey}
+            className={
+              swipeDir === "left"
+                ? "animate-slide-in-left h-full"
+                : swipeDir === "right"
+                ? "animate-slide-in-right h-full"
+                : "animate-fade-in h-full"
+            }
+          >
+            {renderContent()}
+          </div>
           
           {/* Chat Toggle Button */}
           {!chatOpen && (
