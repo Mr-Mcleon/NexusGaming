@@ -175,27 +175,19 @@ export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
               </button>
             );
           })}
-          {/* More menu for additional tabs */}
-          <div className="relative group">
-            <button
-              className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[4rem]",
-                ["downloads", "achievements", "developer", "cloud", "settings"].includes(activeTab)
-                  ? "text-primary"
-                  : "text-muted-foreground"
-              )}
-              onClick={() => {
-                // Cycle through remaining tabs
-                const moreTabs = ["cloud", "downloads", "achievements", "developer", "settings"];
-                const currentIdx = moreTabs.indexOf(activeTab);
-                const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % moreTabs.length : 0;
-                onTabChange(moreTabs[nextIdx]);
-              }}
-            >
-              <Settings className="w-5 h-5" />
-              <span className="text-[10px] font-medium">More</span>
-            </button>
-          </div>
+          {/* More menu drawer trigger */}
+          <button
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[4rem]",
+              moreItems.some(i => i.id === activeTab)
+                ? "text-primary"
+                : "text-muted-foreground"
+            )}
+            onClick={() => setMoreOpen(true)}
+          >
+            <MoreHorizontal className="w-5 h-5" />
+            <span className="text-[10px] font-medium">More</span>
+          </button>
         </div>
       </nav>
     </>
