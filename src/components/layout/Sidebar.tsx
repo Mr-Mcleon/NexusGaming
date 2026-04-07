@@ -190,6 +190,42 @@ export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
           </button>
         </div>
       </nav>
+
+      {/* More items drawer */}
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>More</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-1">
+            {moreItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <DrawerClose asChild key={item.id}>
+                  <button
+                    onClick={() => { onTabChange(item.id); setMoreOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    )}
+                  >
+                    <Icon className={cn("w-5 h-5", isActive && "drop-shadow-[0_0_8px_hsl(var(--primary))]")} />
+                    <span className="font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto bg-accent text-accent-foreground text-xs px-2 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                </DrawerClose>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };
