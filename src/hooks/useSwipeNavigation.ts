@@ -34,6 +34,11 @@ export function useSwipeNavigation({
     // Only trigger if horizontal swipe is dominant
     if (Math.abs(dx) < threshold || Math.abs(dy) > Math.abs(dx)) return;
 
+    // Trigger haptic feedback if available
+    if (navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+
     if (dx > 0) onSwipeRight();
     else onSwipeLeft();
   }, [enabled, threshold, onSwipeLeft, onSwipeRight]);
