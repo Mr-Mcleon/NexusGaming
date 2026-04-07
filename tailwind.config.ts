@@ -120,6 +120,8 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+        "tab-slide-from-right": "tab-slide-from-right 0.25s ease-out",
+        "tab-slide-from-left": "tab-slide-from-left 0.25s ease-out",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
