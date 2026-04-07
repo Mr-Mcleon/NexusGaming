@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { ChatSidebar } from "@/components/layout/ChatSidebar";
@@ -12,16 +12,34 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFriendActivityAlerts } from "@/hooks/useFriendActivityAlerts";
 import { useAchievementChecker } from "@/hooks/useAchievements";
+import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const SWIPE_TABS = ["home", "library", "store", "social"];
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [chatOpen, setChatOpen] = useState(false);
+  const isMobile = useIsMobile();
   
-  // Check for achievement unlocks
   useAchievementChecker();
-  
-  // Listen for friend activity and show alerts
   useFriendActivityAlerts();
+
+  const swipeLeft = useCallback(() => {
+    const idx = SWIPE_TABS.indexOf(activeTab);
+    if (idx >= 0 && idx < SWIPE_TABS.length - 1) setActiveTab(SWIPE_TABS[idx + 1]);
+  }, [activeTab]);
+
+  const swipeRight = useCallback(() => {
+    const idx = SWIPE_TABS.indexOf(activeTab);
+    if (idx > 0) setActiveTab(SWIPE_TABS[idx - 1]);
+  }, [activeTab]);
+
+  const swipeRef = useSwipeNavigation({
+    onSwipeLeft: swipeLeft,
+    onSwipeRight: swipeRight,
+    enabled: isMobile,
+  });
 
   const renderContent = () => {
     switch (activeTab) {
