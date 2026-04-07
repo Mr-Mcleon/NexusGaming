@@ -109,13 +109,13 @@ const Index = () => {
         <main ref={swipeRef as React.RefObject<HTMLElement>} className="flex-1 overflow-hidden relative pb-16 md:pb-0">
           <div
             key={transitionKey}
-            className={
+            className={`h-full ${
               swipeDir === "left"
-                ? "animate-slide-in-left h-full"
+                ? "animate-tab-slide-from-right"
                 : swipeDir === "right"
-                ? "animate-slide-in-right h-full"
-                : "animate-fade-in h-full"
-            }
+                ? "animate-tab-slide-from-left"
+                : "animate-fade-in"
+            }`}
           >
             {renderContent()}
           </div>
