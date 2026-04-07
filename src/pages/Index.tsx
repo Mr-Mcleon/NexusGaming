@@ -98,7 +98,7 @@ const Index = () => {
         <Header />
         
         {/* Content */}
-        <main className="flex-1 overflow-hidden relative pb-16 md:pb-0">
+        <main ref={swipeRef as React.RefObject<HTMLElement>} className="flex-1 overflow-hidden relative pb-16 md:pb-0">
           {renderContent()}
           
           {/* Chat Toggle Button */}
