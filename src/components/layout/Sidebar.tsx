@@ -11,9 +11,17 @@ import {
   Zap,
   Code2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer";
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -43,8 +51,17 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
 }
 
+const moreItems: NavItem[] = [
+  { icon: Cloud, label: "Cloud", id: "cloud" },
+  { icon: Download, label: "Downloads", id: "downloads", badge: 2 },
+  { icon: Trophy, label: "Achievements", id: "achievements" },
+  { icon: Code2, label: "Developer", id: "developer" },
+  { icon: Settings, label: "Settings", id: "settings" },
+];
+
 export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <>
@@ -158,29 +175,57 @@ export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
               </button>
             );
           })}
-          {/* More menu for additional tabs */}
-          <div className="relative group">
-            <button
-              className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[4rem]",
-                ["downloads", "achievements", "developer", "cloud", "settings"].includes(activeTab)
-                  ? "text-primary"
-                  : "text-muted-foreground"
-              )}
-              onClick={() => {
-                // Cycle through remaining tabs
-                const moreTabs = ["cloud", "downloads", "achievements", "developer", "settings"];
-                const currentIdx = moreTabs.indexOf(activeTab);
-                const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % moreTabs.length : 0;
-                onTabChange(moreTabs[nextIdx]);
-              }}
-            >
-              <Settings className="w-5 h-5" />
-              <span className="text-[10px] font-medium">More</span>
-            </button>
-          </div>
+          {/* More menu drawer trigger */}
+          <button
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors min-w-[4rem]",
+              moreItems.some(i => i.id === activeTab)
+                ? "text-primary"
+                : "text-muted-foreground"
+            )}
+            onClick={() => setMoreOpen(true)}
+          >
+            <MoreHorizontal className="w-5 h-5" />
+            <span className="text-[10px] font-medium">More</span>
+          </button>
         </div>
       </nav>
+
+      {/* More items drawer */}
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>More</DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-1">
+            {moreItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <DrawerClose asChild key={item.id}>
+                  <button
+                    onClick={() => { onTabChange(item.id); setMoreOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    )}
+                  >
+                    <Icon className={cn("w-5 h-5", isActive && "drop-shadow-[0_0_8px_hsl(var(--primary))]")} />
+                    <span className="font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className="ml-auto bg-accent text-accent-foreground text-xs px-2 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                </DrawerClose>
+              );
+            })}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };
