@@ -91,6 +91,14 @@ export default {
           from: { transform: "translateX(-100%)", opacity: "0" },
           to: { transform: "translateX(0)", opacity: "1" },
         },
+        "tab-slide-from-right": {
+          from: { transform: "translateX(30px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
+        "tab-slide-from-left": {
+          from: { transform: "translateX(-30px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
         "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
