@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { ChatSidebar } from "@/components/layout/ChatSidebar";
@@ -20,20 +20,28 @@ const SWIPE_TABS = ["home", "library", "store", "social"];
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [chatOpen, setChatOpen] = useState(false);
+  const [swipeDir, setSwipeDir] = useState<"left" | "right" | null>(null);
+  const [transitionKey, setTransitionKey] = useState(0);
   const isMobile = useIsMobile();
   
   useAchievementChecker();
   useFriendActivityAlerts();
 
+  const changeTab = useCallback((tab: string, dir: "left" | "right" | null = null) => {
+    setSwipeDir(dir);
+    setTransitionKey((k) => k + 1);
+    setActiveTab(tab);
+  }, []);
+
   const swipeLeft = useCallback(() => {
     const idx = SWIPE_TABS.indexOf(activeTab);
-    if (idx >= 0 && idx < SWIPE_TABS.length - 1) setActiveTab(SWIPE_TABS[idx + 1]);
-  }, [activeTab]);
+    if (idx >= 0 && idx < SWIPE_TABS.length - 1) changeTab(SWIPE_TABS[idx + 1], "left");
+  }, [activeTab, changeTab]);
 
   const swipeRight = useCallback(() => {
     const idx = SWIPE_TABS.indexOf(activeTab);
-    if (idx > 0) setActiveTab(SWIPE_TABS[idx - 1]);
-  }, [activeTab]);
+    if (idx > 0) changeTab(SWIPE_TABS[idx - 1], "right");
+  }, [activeTab, changeTab]);
 
   const swipeRef = useSwipeNavigation({
     onSwipeLeft: swipeLeft,
@@ -90,7 +98,7 @@ const Index = () => {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Main Sidebar */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar activeTab={activeTab} onTabChange={(tab) => changeTab(tab)} />
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -99,7 +107,18 @@ const Index = () => {
         
         {/* Content */}
         <main ref={swipeRef as React.RefObject<HTMLElement>} className="flex-1 overflow-hidden relative pb-16 md:pb-0">
-          {renderContent()}
+          <div
+            key={transitionKey}
+            className={`h-full ${
+              swipeDir === "left"
+                ? "animate-tab-slide-from-right"
+                : swipeDir === "right"
+                ? "animate-tab-slide-from-left"
+                : "animate-fade-in"
+            }`}
+          >
+            {renderContent()}
+          </div>
           
           {/* Chat Toggle Button */}
           {!chatOpen && (

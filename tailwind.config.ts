@@ -91,6 +91,14 @@ export default {
           from: { transform: "translateX(-100%)", opacity: "0" },
           to: { transform: "translateX(0)", opacity: "1" },
         },
+        "tab-slide-from-right": {
+          from: { transform: "translateX(30px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
+        "tab-slide-from-left": {
+          from: { transform: "translateX(-30px)", opacity: "0" },
+          to: { transform: "translateX(0)", opacity: "1" },
+        },
         "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
@@ -112,6 +120,8 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+        "tab-slide-from-right": "tab-slide-from-right 0.25s ease-out",
+        "tab-slide-from-left": "tab-slide-from-left 0.25s ease-out",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
