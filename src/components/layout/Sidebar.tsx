@@ -51,8 +51,17 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
 }
 
+const moreItems: NavItem[] = [
+  { icon: Cloud, label: "Cloud", id: "cloud" },
+  { icon: Download, label: "Downloads", id: "downloads", badge: 2 },
+  { icon: Trophy, label: "Achievements", id: "achievements" },
+  { icon: Code2, label: "Developer", id: "developer" },
+  { icon: Settings, label: "Settings", id: "settings" },
+];
+
 export const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <>
