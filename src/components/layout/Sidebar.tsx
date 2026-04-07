@@ -11,9 +11,17 @@ import {
   Zap,
   Code2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer";
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
