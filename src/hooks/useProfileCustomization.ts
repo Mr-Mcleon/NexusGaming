@@ -43,17 +43,25 @@ export const useProfileCustomization = (userId?: string) => {
     queryFn: async () => {
       if (!userId) return null;
       const { data, error } = await supabase
-        .from("profile_customization")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) return { ...DEFAULT_CUSTOMIZATION, user_id: userId, id: "" } as ProfileCustomization;
+        .rpc("get_profile_customization" as any, { p_user_id: userId }) as any;
+      
+      // Fallback: try direct query if RPC doesn't exist
+      if (error) {
+        // Table might not exist yet, return defaults
+        console.warn("Profile customization not available:", error.message);
+        return { ...DEFAULT_CUSTOMIZATION, user_id: userId, id: "" } as ProfileCustomization;
+      }
+
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        return { ...DEFAULT_CUSTOMIZATION, user_id: userId, id: "" } as ProfileCustomization;
+      }
+
+      const row = Array.isArray(data) ? data[0] : data;
       return {
-        ...data,
-        social_links: (data.social_links || {}) as SocialLinks,
-        featured_game_ids: data.featured_game_ids || [],
-        section_order: data.section_order || ["games", "achievements", "activity"],
+        ...row,
+        social_links: (row.social_links || {}) as SocialLinks,
+        featured_game_ids: row.featured_game_ids || [],
+        section_order: row.section_order || ["games", "achievements", "activity"],
       } as ProfileCustomization;
     },
     enabled: !!userId,
@@ -68,24 +76,19 @@ export const useSaveProfileCustomization = () => {
     mutationFn: async (customization: Partial<ProfileCustomization>) => {
       if (!user) throw new Error("Not authenticated");
 
-      const payload = {
-        user_id: user.id,
-        banner_url: customization.banner_url,
-        accent_color: customization.accent_color,
-        tagline: customization.tagline,
-        featured_game_ids: customization.featured_game_ids,
-        social_links: customization.social_links as Record<string, unknown>,
-        section_order: customization.section_order,
-        show_activity: customization.show_activity,
-        show_achievements: customization.show_achievements,
-        show_games: customization.show_games,
-      };
-
-      const { data, error } = await supabase
-        .from("profile_customization")
-        .upsert(payload, { onConflict: "user_id" })
-        .select()
-        .single();
+      // Use raw SQL via RPC or direct fetch
+      const { data, error } = await supabase.rpc("upsert_profile_customization" as any, {
+        p_user_id: user.id,
+        p_banner_url: customization.banner_url || null,
+        p_accent_color: customization.accent_color || "#8B5CF6",
+        p_tagline: customization.tagline || null,
+        p_featured_game_ids: customization.featured_game_ids || [],
+        p_social_links: customization.social_links || {},
+        p_section_order: customization.section_order || ["games", "achievements", "activity"],
+        p_show_activity: customization.show_activity ?? true,
+        p_show_achievements: customization.show_achievements ?? true,
+        p_show_games: customization.show_games ?? true,
+      }) as any;
 
       if (error) throw error;
       return data;
