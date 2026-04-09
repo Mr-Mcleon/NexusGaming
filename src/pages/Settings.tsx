@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ThemePreviewCard } from "@/components/settings/ThemePreviewCard";
 import { AccountSyncSection } from "@/components/settings/AccountSyncSection";
 import { useAccountSync } from "@/hooks/useAccountSync";
+import { ProfileCustomizationEditor } from "@/components/profile/ProfileCustomizationEditor";
 
 interface Profile {
   username: string | null;
@@ -288,6 +289,15 @@ export default function Settings() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Profile Customization Section */}
+        <div className="glass-card rounded-xl p-6 mb-6">
+          <h2 className="font-display text-lg font-bold mb-4">Profile Customization</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Customize how your public profile looks — banner, accent color, featured games, and more.
+          </p>
+          <ProfileCustomizationEditor />
         </div>
 
         {/* Theme Selection Section */}
