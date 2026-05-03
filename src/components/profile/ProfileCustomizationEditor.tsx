@@ -9,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Image, Palette, GripVertical, Link2, Gamepad2, Save, Loader2, X, Plus,
-  Twitter, MessageCircle, Tv, Youtube, ArrowUp, ArrowDown,
+  Twitter, MessageCircle, Tv, Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Reorder, useDragControls, motion } from "framer-motion";
 
 const ACCENT_COLORS = [
   "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444",
@@ -71,13 +72,6 @@ export function ProfileCustomizationEditor() {
     setBannerUrl(url);
   };
 
-  const moveSection = (index: number, direction: "up" | "down") => {
-    const newOrder = [...sectionOrder];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= newOrder.length) return;
-    [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
-    setSectionOrder(newOrder);
-  };
 
   const toggleFeaturedGame = (gameId: string) => {
     setFeaturedGameIds((prev) =>
@@ -202,8 +196,14 @@ export function ProfileCustomizationEditor() {
           <GripVertical className="w-5 h-5 text-muted-foreground" />
           <h2 className="font-medium">Section Order & Visibility</h2>
         </div>
-        <div className="space-y-2">
-          {sectionOrder.map((section, index) => {
+        <p className="text-xs text-muted-foreground mb-3">Drag to reorder sections</p>
+        <Reorder.Group
+          axis="y"
+          values={sectionOrder}
+          onReorder={setSectionOrder}
+          className="space-y-2"
+        >
+          {sectionOrder.map((section) => {
             const info = SECTION_LABELS[section];
             const isVisible =
               section === "games" ? showGames :
@@ -214,32 +214,17 @@ export function ProfileCustomizationEditor() {
               section === "achievements" ? setShowAchievements :
               setShowActivity;
             return (
-              <div key={section} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    disabled={index === 0}
-                    onClick={() => moveSection(index, "up")}
-                    className="p-0.5 hover:text-primary disabled:opacity-30 transition-colors"
-                  >
-                    <ArrowUp className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    disabled={index === sectionOrder.length - 1}
-                    onClick={() => moveSection(index, "down")}
-                    className="p-0.5 hover:text-primary disabled:opacity-30 transition-colors"
-                  >
-                    <ArrowDown className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 flex-1">
-                  {info?.icon}
-                  <span className="text-sm font-medium">{info?.label || section}</span>
-                </div>
-                <Switch checked={isVisible} onCheckedChange={toggle} />
-              </div>
+              <SectionReorderItem
+                key={section}
+                section={section}
+                icon={info?.icon}
+                label={info?.label || section}
+                isVisible={isVisible}
+                onToggle={toggle}
+              />
             );
           })}
-        </div>
+        </Reorder.Group>
       </div>
 
       {/* Featured Games */}
@@ -332,5 +317,41 @@ export function ProfileCustomizationEditor() {
         )}
       </Button>
     </div>
+  );
+}
+
+interface SectionReorderItemProps {
+  section: string;
+  icon: React.ReactNode;
+  label: string;
+  isVisible: boolean;
+  onToggle: (v: boolean) => void;
+}
+
+function SectionReorderItem({ section, icon, label, isVisible, onToggle }: SectionReorderItemProps) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={section}
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{ scale: 1.02, boxShadow: "0 10px 30px -10px hsl(var(--primary) / 0.4)", zIndex: 10 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 cursor-default touch-none"
+    >
+      <button
+        type="button"
+        onPointerDown={(e) => controls.start(e)}
+        className="p-1 -ml-1 text-muted-foreground hover:text-primary transition-colors cursor-grab active:cursor-grabbing touch-none"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="flex items-center gap-2 flex-1">
+        {icon}
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <Switch checked={isVisible} onCheckedChange={onToggle} />
+    </Reorder.Item>
   );
 }
