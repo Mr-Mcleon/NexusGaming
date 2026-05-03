@@ -319,3 +319,39 @@ export function ProfileCustomizationEditor() {
     </div>
   );
 }
+
+interface SectionReorderItemProps {
+  section: string;
+  icon: React.ReactNode;
+  label: string;
+  isVisible: boolean;
+  onToggle: (v: boolean) => void;
+}
+
+function SectionReorderItem({ section, icon, label, isVisible, onToggle }: SectionReorderItemProps) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={section}
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{ scale: 1.02, boxShadow: "0 10px 30px -10px hsl(var(--primary) / 0.4)", zIndex: 10 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 cursor-default touch-none"
+    >
+      <button
+        type="button"
+        onPointerDown={(e) => controls.start(e)}
+        className="p-1 -ml-1 text-muted-foreground hover:text-primary transition-colors cursor-grab active:cursor-grabbing touch-none"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="flex items-center gap-2 flex-1">
+        {icon}
+        <span className="text-sm font-medium">{label}</span>
+      </div>
+      <Switch checked={isVisible} onCheckedChange={onToggle} />
+    </Reorder.Item>
+  );
+}
