@@ -9,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Image, Palette, GripVertical, Link2, Gamepad2, Save, Loader2, X, Plus,
-  Twitter, MessageCircle, Tv, Youtube, ArrowUp, ArrowDown,
+  Twitter, MessageCircle, Tv, Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Reorder, useDragControls, motion } from "framer-motion";
 
 const ACCENT_COLORS = [
   "#8B5CF6", "#06B6D4", "#10B981", "#F59E0B", "#EF4444",
