@@ -72,13 +72,6 @@ export function ProfileCustomizationEditor() {
     setBannerUrl(url);
   };
 
-  const moveSection = (index: number, direction: "up" | "down") => {
-    const newOrder = [...sectionOrder];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= newOrder.length) return;
-    [newOrder[index], newOrder[newIndex]] = [newOrder[newIndex], newOrder[index]];
-    setSectionOrder(newOrder);
-  };
 
   const toggleFeaturedGame = (gameId: string) => {
     setFeaturedGameIds((prev) =>
