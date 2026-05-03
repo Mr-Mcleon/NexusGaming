@@ -13,6 +13,7 @@ import SharedWishlist from "./pages/SharedWishlist";
 import ResetPassword from "./pages/ResetPassword";
 import PublicProfile from "./pages/PublicProfile";
 import CommunityInvite from "./pages/CommunityInvite";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -115,6 +116,15 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
