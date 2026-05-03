@@ -203,8 +203,14 @@ export function ProfileCustomizationEditor() {
           <GripVertical className="w-5 h-5 text-muted-foreground" />
           <h2 className="font-medium">Section Order & Visibility</h2>
         </div>
-        <div className="space-y-2">
-          {sectionOrder.map((section, index) => {
+        <p className="text-xs text-muted-foreground mb-3">Drag to reorder sections</p>
+        <Reorder.Group
+          axis="y"
+          values={sectionOrder}
+          onReorder={setSectionOrder}
+          className="space-y-2"
+        >
+          {sectionOrder.map((section) => {
             const info = SECTION_LABELS[section];
             const isVisible =
               section === "games" ? showGames :
@@ -215,32 +221,17 @@ export function ProfileCustomizationEditor() {
               section === "achievements" ? setShowAchievements :
               setShowActivity;
             return (
-              <div key={section} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    disabled={index === 0}
-                    onClick={() => moveSection(index, "up")}
-                    className="p-0.5 hover:text-primary disabled:opacity-30 transition-colors"
-                  >
-                    <ArrowUp className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    disabled={index === sectionOrder.length - 1}
-                    onClick={() => moveSection(index, "down")}
-                    className="p-0.5 hover:text-primary disabled:opacity-30 transition-colors"
-                  >
-                    <ArrowDown className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 flex-1">
-                  {info?.icon}
-                  <span className="text-sm font-medium">{info?.label || section}</span>
-                </div>
-                <Switch checked={isVisible} onCheckedChange={toggle} />
-              </div>
+              <SectionReorderItem
+                key={section}
+                section={section}
+                icon={info?.icon}
+                label={info?.label || section}
+                isVisible={isVisible}
+                onToggle={toggle}
+              />
             );
           })}
-        </div>
+        </Reorder.Group>
       </div>
 
       {/* Featured Games */}
