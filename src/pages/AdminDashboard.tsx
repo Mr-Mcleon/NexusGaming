@@ -288,6 +288,8 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
+
+          <UserRolesManager />
         </div>
       </ScrollArea>
     </div>
