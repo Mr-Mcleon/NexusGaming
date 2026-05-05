@@ -150,9 +150,9 @@ const App = () => (
               <Route
                 path="/admin"
                 element={
-                  <ProtectedRoute>
+                  <AdminRoute>
                     <AdminDashboard />
-                  </ProtectedRoute>
+                  </AdminRoute>
                 }
               />
 
