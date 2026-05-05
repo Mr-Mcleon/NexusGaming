@@ -69,6 +69,8 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
   return <>{children}</>;
 };
+
+const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
