@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import { UserRolesManager } from "@/components/admin/UserRolesManager";
 
 type Status = "checking" | "healthy" | "degraded" | "down";
 
@@ -287,6 +288,8 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
+
+          <UserRolesManager />
         </div>
       </ScrollArea>
     </div>
