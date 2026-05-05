@@ -15,6 +15,8 @@ import PublicProfile from "./pages/PublicProfile";
 import CommunityInvite from "./pages/CommunityInvite";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { ShieldAlert } from "lucide-react";
 
 const queryClient = new QueryClient();
 
