@@ -291,6 +291,7 @@ export default function AdminDashboard() {
           </Card>
 
           <UserRolesManager />
+          <RlsVerification />
         </div>
       </ScrollArea>
     </div>
