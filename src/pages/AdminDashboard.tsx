@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { UserRolesManager } from "@/components/admin/UserRolesManager";
+import { RlsVerification } from "@/components/admin/RlsVerification";
 
 type Status = "checking" | "healthy" | "degraded" | "down";
 
