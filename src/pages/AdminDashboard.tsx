@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { UserRolesManager } from "@/components/admin/UserRolesManager";
 import { RlsVerification } from "@/components/admin/RlsVerification";
+import { RlsVerificationHistory } from "@/components/admin/RlsVerificationHistory";
 
 type Status = "checking" | "healthy" | "degraded" | "down";
 
@@ -61,6 +62,8 @@ export default function AdminDashboard() {
   const [migrations, setMigrations] = useState<MigrationCheck[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [lastRun, setLastRun] = useState<Date | null>(null);
+
+  const [historyKey, setHistoryKey] = useState(0);
 
   const runChecks = async () => {
     setRefreshing(true);
@@ -291,7 +294,8 @@ export default function AdminDashboard() {
           </Card>
 
           <UserRolesManager />
-          <RlsVerification />
+          <RlsVerification onRunSaved={() => setHistoryKey((k) => k + 1)} />
+          <RlsVerificationHistory refreshKey={historyKey} />
         </div>
       </ScrollArea>
     </div>
