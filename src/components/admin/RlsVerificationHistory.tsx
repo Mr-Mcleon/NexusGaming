@@ -139,10 +139,24 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
               {isAdmin ? "All users' past RLS verification runs" : "Your past RLS verification runs"}
             </CardDescription>
           </div>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && runs.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setConfirmClearAll(true)}
+                disabled={loading || deleting}
+              >
+                <Eraser className="w-4 h-4 mr-2" />
+                Clear all
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
