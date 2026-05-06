@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { History, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, Trash2 } from "lucide-react";
+import { History, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, Trash2, Eraser } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -51,6 +55,9 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -90,13 +97,35 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   }, [user, refreshKey]);
 
   const removeRun = async (id: string) => {
+    setDeleting(true);
     const { error } = await supabase.from("rls_verification_runs").delete().eq("id", id);
+    setDeleting(false);
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
       return;
     }
     setRuns((prev) => prev.filter((r) => r.id !== id));
+    setConfirmDeleteId(null);
+    toast({ title: "Run deleted", description: "Verification run removed from history." });
   };
+
+  const clearAllRuns = async () => {
+    setDeleting(true);
+    const { error } = await supabase
+      .from("rls_verification_runs")
+      .delete()
+      .gte("created_at", "1970-01-01");
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Clear failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    setRuns([]);
+    setConfirmClearAll(false);
+    toast({ title: "History cleared", description: "All verification runs were removed." });
+  };
+
+  const targetRun = runs.find((r) => r.id === confirmDeleteId);
 
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -110,10 +139,24 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
               {isAdmin ? "All users' past RLS verification runs" : "Your past RLS verification runs"}
             </CardDescription>
           </div>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && runs.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setConfirmClearAll(true)}
+                disabled={loading || deleting}
+              >
+                <Eraser className="w-4 h-4 mr-2" />
+                Clear all
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -177,7 +220,9 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
                                 size="icon"
                                 variant="ghost"
                                 className="h-7 w-7"
-                                onClick={() => removeRun(r.id)}
+                                onClick={() => setConfirmDeleteId(r.id)}
+                                disabled={deleting}
+                                aria-label="Delete run"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
@@ -217,6 +262,57 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(o) => !o && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this verification run?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {targetRun ? (
+                <>
+                  This will permanently remove the run from{" "}
+                  <span className="font-mono">{targetRun.username ?? targetRun.user_id.slice(0, 8)}</span>{" "}
+                  recorded on {new Date(targetRun.created_at).toLocaleString()}. This cannot be undone.
+                </>
+              ) : (
+                "This action cannot be undone."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); if (confirmDeleteId) removeRun(confirmDeleteId); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmClearAll} onOpenChange={setConfirmClearAll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all verification history?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes <span className="font-semibold">all {runs.length}</span> verification runs
+              for every user. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); clearAllRuns(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Clearing..." : "Clear all"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
