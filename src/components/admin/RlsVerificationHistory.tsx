@@ -55,6 +55,9 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     if (!user) return;
