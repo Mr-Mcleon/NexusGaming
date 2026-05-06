@@ -26,7 +26,11 @@ const OUTCOME_META: Record<Outcome, { color: string; icon: typeof CheckCircle2; 
 
 const FAKE_UUID = "00000000-0000-0000-0000-000000000001";
 
-export function RlsVerification() {
+interface RlsVerificationProps {
+  onRunSaved?: () => void;
+}
+
+export function RlsVerification({ onRunSaved }: RlsVerificationProps = {}) {
   const { user } = useAuth();
   const [results, setResults] = useState<TestResult[]>([]);
   const [running, setRunning] = useState(false);
