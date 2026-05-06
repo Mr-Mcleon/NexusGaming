@@ -60,6 +60,9 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [userQuery, setUserQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pass" | "fail" | "warn">("all");
+  const [testFilter, setTestFilter] = useState<string>("all");
 
   const load = async () => {
     if (!user) return;
