@@ -183,6 +183,29 @@ export function RlsVerification({ onRunSaved }: RlsVerificationProps = {}) {
       }
     }
 
+    // Persist run history
+    const passC = tests.filter((t) => t.outcome === "pass").length;
+    const failC = tests.filter((t) => t.outcome === "fail").length;
+    const warnC = tests.filter((t) => t.outcome === "warn").length;
+    const overallRun: Outcome =
+      failC > 0 ? "fail" : warnC > 0 ? "warn" : passC > 0 ? "pass" : "pending";
+
+    const { error: insertError } = await supabase.from("rls_verification_runs").insert({
+      user_id: user.id,
+      ran_as_admin: admin,
+      total_count: tests.length,
+      pass_count: passC,
+      fail_count: failC,
+      warn_count: warnC,
+      overall: overallRun,
+      results: tests as any,
+    });
+    if (insertError) {
+      console.warn("Failed to save RLS verification run:", insertError.message);
+    } else {
+      onRunSaved?.();
+    }
+
     setRunning(false);
   };
 
