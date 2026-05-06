@@ -416,6 +416,45 @@ export type Database = {
           },
         ]
       }
+      rls_verification_runs: {
+        Row: {
+          created_at: string
+          fail_count: number
+          id: string
+          overall: string
+          pass_count: number
+          ran_as_admin: boolean
+          results: Json
+          total_count: number
+          user_id: string
+          warn_count: number
+        }
+        Insert: {
+          created_at?: string
+          fail_count?: number
+          id?: string
+          overall: string
+          pass_count?: number
+          ran_as_admin?: boolean
+          results?: Json
+          total_count?: number
+          user_id: string
+          warn_count?: number
+        }
+        Update: {
+          created_at?: string
+          fail_count?: number
+          id?: string
+          overall?: string
+          pass_count?: number
+          ran_as_admin?: boolean
+          results?: Json
+          total_count?: number
+          user_id?: string
+          warn_count?: number
+        }
+        Relationships: []
+      }
       sale_notifications: {
         Row: {
           created_at: string
