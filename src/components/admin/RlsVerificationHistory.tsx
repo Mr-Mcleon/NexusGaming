@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { History, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, Trash2, Eraser } from "lucide-react";
+import { History, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, Trash2, Eraser, Search, FilterX } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +60,9 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [userQuery, setUserQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "pass" | "fail" | "warn">("all");
+  const [testFilter, setTestFilter] = useState<string>("all");
 
   const load = async () => {
     if (!user) return;
@@ -127,6 +132,47 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
 
   const targetRun = runs.find((r) => r.id === confirmDeleteId);
 
+  // Unique test names for filter dropdown
+  const testOptions = useMemo(() => {
+    const set = new Set<string>();
+    runs.forEach((r) => r.results?.forEach((res) => set.add(res.name)));
+    return Array.from(set).sort();
+  }, [runs]);
+
+  // Apply filters
+  const filteredRuns = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    return runs.filter((r) => {
+      if (q) {
+        const haystack = `${r.username ?? ""} ${r.user_id}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (statusFilter !== "all") {
+        if (statusFilter === "pass" && r.fail_count === 0 && r.warn_count === 0 && r.pass_count > 0) {
+          // pass-only run
+        } else if (statusFilter === "fail" && r.fail_count > 0) {
+          // ok
+        } else if (statusFilter === "warn" && r.warn_count > 0) {
+          // ok
+        } else {
+          return false;
+        }
+      }
+      if (testFilter !== "all") {
+        const hasTest = r.results?.some((res) => res.name === testFilter);
+        if (!hasTest) return false;
+      }
+      return true;
+    });
+  }, [runs, userQuery, statusFilter, testFilter]);
+
+  const filtersActive = userQuery !== "" || statusFilter !== "all" || testFilter !== "all";
+  const clearFilters = () => {
+    setUserQuery("");
+    setStatusFilter("all");
+    setTestFilter("all");
+  };
+
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader>
@@ -160,6 +206,58 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
         </div>
       </CardHeader>
       <CardContent>
+        {runs.length > 0 && (
+          <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+                placeholder="Search by username or user id..."
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="h-9 w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="pass">Pass only</SelectItem>
+                <SelectItem value="fail">Has failures</SelectItem>
+                <SelectItem value="warn">Has warnings</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={testFilter} onValueChange={setTestFilter}>
+              <SelectTrigger className="h-9 w-[200px]">
+                <SelectValue placeholder="Test type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tests</SelectItem>
+                {testOptions.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={clearFilters}
+              disabled={!filtersActive}
+              className="h-9"
+            >
+              <FilterX className="w-4 h-4 mr-2" />
+              Clear
+            </Button>
+          </div>
+        )}
+
+        {filtersActive && (
+          <p className="text-xs text-muted-foreground mb-2">
+            Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? "" : "s"}
+          </p>
+        )}
+
         {loading && runs.length === 0 ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading history...
@@ -168,12 +266,16 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           <p className="text-sm text-muted-foreground py-6 text-center">
             No runs recorded yet. Run the RLS verification suite above to populate history.
           </p>
+        ) : filteredRuns.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            No runs match the current filters.
+          </p>
         ) : (
           <div className="relative">
             {/* Timeline line */}
             <div className="absolute left-3 top-2 bottom-2 w-px bg-border/60" />
             <div className="space-y-3">
-              {runs.map((r, i) => {
+              {filteredRuns.map((r, i) => {
                 const meta = OUTCOME_META[r.overall];
                 const Icon = meta.icon;
                 const isOpen = openId === r.id;
