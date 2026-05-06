@@ -206,6 +206,58 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
         </div>
       </CardHeader>
       <CardContent>
+        {runs.length > 0 && (
+          <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                value={userQuery}
+                onChange={(e) => setUserQuery(e.target.value)}
+                placeholder="Search by username or user id..."
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="h-9 w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="pass">Pass only</SelectItem>
+                <SelectItem value="fail">Has failures</SelectItem>
+                <SelectItem value="warn">Has warnings</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={testFilter} onValueChange={setTestFilter}>
+              <SelectTrigger className="h-9 w-[200px]">
+                <SelectValue placeholder="Test type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tests</SelectItem>
+                {testOptions.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={clearFilters}
+              disabled={!filtersActive}
+              className="h-9"
+            >
+              <FilterX className="w-4 h-4 mr-2" />
+              Clear
+            </Button>
+          </div>
+        )}
+
+        {filtersActive && (
+          <p className="text-xs text-muted-foreground mb-2">
+            Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? "" : "s"}
+          </p>
+        )}
+
         {loading && runs.length === 0 ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading history...
@@ -214,12 +266,16 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           <p className="text-sm text-muted-foreground py-6 text-center">
             No runs recorded yet. Run the RLS verification suite above to populate history.
           </p>
+        ) : filteredRuns.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">
+            No runs match the current filters.
+          </p>
         ) : (
           <div className="relative">
             {/* Timeline line */}
             <div className="absolute left-3 top-2 bottom-2 w-px bg-border/60" />
             <div className="space-y-3">
-              {runs.map((r, i) => {
+              {filteredRuns.map((r, i) => {
                 const meta = OUTCOME_META[r.overall];
                 const Icon = meta.icon;
                 const isOpen = openId === r.id;
