@@ -63,6 +63,8 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastRun, setLastRun] = useState<Date | null>(null);
 
+  const [historyKey, setHistoryKey] = useState(0);
+
   const runChecks = async () => {
     setRefreshing(true);
     setBackend({ label: "Database ping", status: "checking", detail: "Querying profiles..." });
