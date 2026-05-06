@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { UserRolesManager } from "@/components/admin/UserRolesManager";
 import { RlsVerification } from "@/components/admin/RlsVerification";
+import { RlsVerificationHistory } from "@/components/admin/RlsVerificationHistory";
 
 type Status = "checking" | "healthy" | "degraded" | "down";
 
