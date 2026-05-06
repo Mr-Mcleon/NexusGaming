@@ -97,13 +97,35 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   }, [user, refreshKey]);
 
   const removeRun = async (id: string) => {
+    setDeleting(true);
     const { error } = await supabase.from("rls_verification_runs").delete().eq("id", id);
+    setDeleting(false);
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
       return;
     }
     setRuns((prev) => prev.filter((r) => r.id !== id));
+    setConfirmDeleteId(null);
+    toast({ title: "Run deleted", description: "Verification run removed from history." });
   };
+
+  const clearAllRuns = async () => {
+    setDeleting(true);
+    const { error } = await supabase
+      .from("rls_verification_runs")
+      .delete()
+      .gte("created_at", "1970-01-01");
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Clear failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    setRuns([]);
+    setConfirmClearAll(false);
+    toast({ title: "History cleared", description: "All verification runs were removed." });
+  };
+
+  const targetRun = runs.find((r) => r.id === confirmDeleteId);
 
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
