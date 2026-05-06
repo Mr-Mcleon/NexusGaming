@@ -220,7 +220,9 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
                                 size="icon"
                                 variant="ghost"
                                 className="h-7 w-7"
-                                onClick={() => removeRun(r.id)}
+                                onClick={() => setConfirmDeleteId(r.id)}
+                                disabled={deleting}
+                                aria-label="Delete run"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
