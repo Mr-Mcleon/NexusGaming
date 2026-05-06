@@ -294,7 +294,8 @@ export default function AdminDashboard() {
           </Card>
 
           <UserRolesManager />
-          <RlsVerification />
+          <RlsVerification onRunSaved={() => setHistoryKey((k) => k + 1)} />
+          <RlsVerificationHistory refreshKey={historyKey} />
         </div>
       </ScrollArea>
     </div>
