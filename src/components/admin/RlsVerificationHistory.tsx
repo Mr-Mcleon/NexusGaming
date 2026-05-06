@@ -132,6 +132,47 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
 
   const targetRun = runs.find((r) => r.id === confirmDeleteId);
 
+  // Unique test names for filter dropdown
+  const testOptions = useMemo(() => {
+    const set = new Set<string>();
+    runs.forEach((r) => r.results?.forEach((res) => set.add(res.name)));
+    return Array.from(set).sort();
+  }, [runs]);
+
+  // Apply filters
+  const filteredRuns = useMemo(() => {
+    const q = userQuery.trim().toLowerCase();
+    return runs.filter((r) => {
+      if (q) {
+        const haystack = `${r.username ?? ""} ${r.user_id}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (statusFilter !== "all") {
+        if (statusFilter === "pass" && r.fail_count === 0 && r.warn_count === 0 && r.pass_count > 0) {
+          // pass-only run
+        } else if (statusFilter === "fail" && r.fail_count > 0) {
+          // ok
+        } else if (statusFilter === "warn" && r.warn_count > 0) {
+          // ok
+        } else {
+          return false;
+        }
+      }
+      if (testFilter !== "all") {
+        const hasTest = r.results?.some((res) => res.name === testFilter);
+        if (!hasTest) return false;
+      }
+      return true;
+    });
+  }, [runs, userQuery, statusFilter, testFilter]);
+
+  const filtersActive = userQuery !== "" || statusFilter !== "all" || testFilter !== "all";
+  const clearFilters = () => {
+    setUserQuery("");
+    setStatusFilter("all");
+    setTestFilter("all");
+  };
+
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader>
