@@ -61,17 +61,87 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [userQuery, setUserQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pass" | "fail" | "warn">("all");
   const [testFilter, setTestFilter] = useState<string>("all");
+  const [totalCount, setTotalCount] = useState(0);
+  const [testOptions, setTestOptions] = useState<string[]>([]);
+
+  // Debounce username search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(userQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [userQuery]);
+
+  // Load distinct test names from a sample of recent runs (independent of filters)
+  const loadTestOptions = async () => {
+    const { data } = await supabase
+      .from("rls_verification_runs")
+      .select("results")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const set = new Set<string>();
+    (data ?? []).forEach((row: any) => {
+      (row.results as RunResult[] | null)?.forEach((res) => set.add(res.name));
+    });
+    setTestOptions(Array.from(set).sort());
+  };
 
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+
+    // Resolve username search → matching user_ids via profiles
+    let userIdMatches: string[] | null = null;
+    const q = debouncedQuery;
+    const looksLikeUuid = /^[0-9a-f-]{4,}$/i.test(q);
+    if (q) {
+      const { data: matchedProfiles } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .ilike("username", `%${q}%`);
+      userIdMatches = (matchedProfiles ?? []).map((p: any) => p.user_id);
+    }
+
+    let query = supabase
       .from("rls_verification_runs")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .limit(50);
+
+    // Username/UUID filter (DB-side)
+    if (q) {
+      const ids = userIdMatches ?? [];
+      if (looksLikeUuid && ids.length === 0) {
+        query = query.eq("user_id", q);
+      } else if (looksLikeUuid) {
+        query = query.in("user_id", Array.from(new Set([...ids, q])));
+      } else if (ids.length > 0) {
+        query = query.in("user_id", ids);
+      } else {
+        // No matches — short-circuit
+        setRuns([]);
+        setTotalCount(0);
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Status filter (DB-side)
+    if (statusFilter === "pass") {
+      query = query.eq("fail_count", 0).eq("warn_count", 0).gt("pass_count", 0);
+    } else if (statusFilter === "fail") {
+      query = query.gt("fail_count", 0);
+    } else if (statusFilter === "warn") {
+      query = query.gt("warn_count", 0);
+    }
+
+    // Test type filter (DB-side via jsonb contains)
+    if (testFilter !== "all") {
+      query = query.contains("results", [{ name: testFilter }]);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
       toast({ title: "Couldn't load history", description: error.message, variant: "destructive" });
@@ -81,7 +151,7 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
 
     const rows = (data ?? []) as unknown as Run[];
 
-    // Resolve usernames
+    // Resolve usernames for display
     const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
@@ -93,11 +163,17 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
     }
 
     setRuns(rows);
+    setTotalCount(count ?? rows.length);
     setLoading(false);
   };
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, refreshKey, debouncedQuery, statusFilter, testFilter]);
+
+  useEffect(() => {
+    if (user) loadTestOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshKey]);
 
