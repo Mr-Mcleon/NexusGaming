@@ -57,3 +57,51 @@ export async function searchUserIdsCached(query: string): Promise<string[]> {
 export function clearUsernameSearchCache() {
   cache.clear();
 }
+
+/**
+ * Seed cache with a known username → user_id mapping without an RPC roundtrip.
+ * Used for prewarming common queries (e.g. admin usernames).
+ */
+export function primeUsernameCache(username: string, userIds: string[]) {
+  const key = norm(username);
+  if (!key) return;
+  cache.set(key, { ids: userIds, expiresAt: Date.now() + TTL_MS });
+  evictIfNeeded();
+}
+
+let prewarmInflight: Promise<void> | null = null;
+let lastPrewarmAt = 0;
+const PREWARM_COOLDOWN_MS = 60_000;
+
+/**
+ * Prewarm the search cache with admin usernames. Idempotent + cooldowned.
+ * Admins (per RLS) can read user_roles; non-admins simply get an empty list.
+ */
+export async function prewarmAdminUsernames(): Promise<void> {
+  if (prewarmInflight) return prewarmInflight;
+  if (Date.now() - lastPrewarmAt < PREWARM_COOLDOWN_MS) return;
+
+  prewarmInflight = (async () => {
+    try {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      const ids = Array.from(new Set((roles ?? []).map((r: any) => r.user_id as string)));
+      if (ids.length === 0) return;
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, username")
+        .in("user_id", ids);
+
+      (profiles ?? []).forEach((p: any) => {
+        if (p.username) primeUsernameCache(p.username, [p.user_id]);
+      });
+      lastPrewarmAt = Date.now();
+    } finally {
+      prewarmInflight = null;
+    }
+  })();
+  return prewarmInflight;
+}
