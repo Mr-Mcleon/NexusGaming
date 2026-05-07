@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
-import { searchUserIdsCached } from "@/lib/usernameSearchCache";
+import { searchUserIdsCached, prewarmAdminUsernames } from "@/lib/usernameSearchCache";
 
 type Outcome = "pass" | "fail" | "warn" | "pending" | "running";
 
@@ -170,7 +170,11 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   }, [user, refreshKey, debouncedQuery, statusFilter, testFilter]);
 
   useEffect(() => {
-    if (user) loadTestOptions();
+    if (user) {
+      loadTestOptions();
+      // Prewarm cache so admin username searches resolve instantly
+      prewarmAdminUsernames();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshKey]);
 
