@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { History, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Loader2, ChevronDown, Trash2, Eraser, Search, FilterX } from "lucide-react";
 import { Input } from "@/components/ui/input";
