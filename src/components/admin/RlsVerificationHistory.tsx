@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
+import { searchUserIdsCached } from "@/lib/usernameSearchCache";
 
 type Outcome = "pass" | "fail" | "warn" | "pending" | "running";
 
@@ -91,16 +92,12 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
     if (!user) return;
     setLoading(true);
 
-    // Resolve username search → matching user_ids via indexed RPC
+    // Resolve username search → matching user_ids via indexed RPC (with short TTL cache)
     let userIdMatches: string[] | null = null;
     const q = debouncedQuery;
     const looksLikeUuid = /^[0-9a-f-]{4,}$/i.test(q);
     if (q) {
-      const { data: matched } = await supabase.rpc("search_profile_user_ids", {
-        _query: q,
-        _limit: 200,
-      });
-      userIdMatches = (matched ?? []).map((p: any) => p.user_id);
+      userIdMatches = await searchUserIdsCached(q);
     }
 
     let query = supabase
