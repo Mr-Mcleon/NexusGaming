@@ -765,6 +765,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_profile_user_ids: {
+        Args: { _limit?: number; _query: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
