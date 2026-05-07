@@ -251,7 +251,7 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
         </div>
       </CardHeader>
       <CardContent>
-        {runs.length > 0 && (
+        {(runs.length > 0 || filtersActive || testOptions.length > 0) && (
           <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
