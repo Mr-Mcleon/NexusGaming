@@ -297,23 +297,21 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           </div>
         )}
 
-        {filtersActive && (
+        {filtersActive && !loading && (
           <p className="text-xs text-muted-foreground mb-2">
-            Showing {filteredRuns.length} of {runs.length} run{runs.length === 1 ? "" : "s"}
+            Showing {runs.length} matching run{runs.length === 1 ? "" : "s"}
           </p>
         )}
 
-        {loading && runs.length === 0 ? (
+        {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
             <Loader2 className="w-4 h-4 animate-spin" /> Loading history...
           </div>
         ) : runs.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">
-            No runs recorded yet. Run the RLS verification suite above to populate history.
-          </p>
-        ) : filteredRuns.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">
-            No runs match the current filters.
+            {filtersActive
+              ? "No runs match the current filters."
+              : "No runs recorded yet. Run the RLS verification suite above to populate history."}
           </p>
         ) : (
           <div className="relative">
