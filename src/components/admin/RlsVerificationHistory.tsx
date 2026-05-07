@@ -170,7 +170,11 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   }, [user, refreshKey, debouncedQuery, statusFilter, testFilter]);
 
   useEffect(() => {
-    if (user) loadTestOptions();
+    if (user) {
+      loadTestOptions();
+      // Prewarm cache so admin username searches resolve instantly
+      prewarmAdminUsernames();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshKey]);
 
