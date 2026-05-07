@@ -91,16 +91,16 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
     if (!user) return;
     setLoading(true);
 
-    // Resolve username search → matching user_ids via profiles
+    // Resolve username search → matching user_ids via indexed RPC
     let userIdMatches: string[] | null = null;
     const q = debouncedQuery;
     const looksLikeUuid = /^[0-9a-f-]{4,}$/i.test(q);
     if (q) {
-      const { data: matchedProfiles } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .ilike("username", `%${q}%`);
-      userIdMatches = (matchedProfiles ?? []).map((p: any) => p.user_id);
+      const { data: matched } = await supabase.rpc("search_profile_user_ids", {
+        _query: q,
+        _limit: 200,
+      });
+      userIdMatches = (matched ?? []).map((p: any) => p.user_id);
     }
 
     let query = supabase
