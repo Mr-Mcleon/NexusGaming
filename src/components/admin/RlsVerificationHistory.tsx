@@ -67,6 +67,7 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [testFilter, setTestFilter] = useState<string>("all");
   const [totalCount, setTotalCount] = useState(0);
   const [testOptions, setTestOptions] = useState<string[]>([]);
+  const [prewarming, setPrewarming] = useState(false);
 
   // Debounce username search
   useEffect(() => {
@@ -173,7 +174,8 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
     if (user) {
       loadTestOptions();
       // Prewarm cache so admin username searches resolve instantly
-      prewarmAdminUsernames();
+      setPrewarming(true);
+      prewarmAdminUsernames().finally(() => setPrewarming(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshKey]);
@@ -295,6 +297,13 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
               <FilterX className="w-4 h-4 mr-2" />
               Clear
             </Button>
+          </div>
+        )}
+
+        {prewarming && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Prewarming username cache…
           </div>
         )}
 
