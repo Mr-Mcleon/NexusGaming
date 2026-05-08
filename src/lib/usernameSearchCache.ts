@@ -76,9 +76,19 @@ export async function searchUserIdsCached(query: string): Promise<string[]> {
   const now = Date.now();
   const hit = cache.get(key);
   if (hit) {
-    if (hit.inflight) return hit.inflight;
-    if (hit.expiresAt > now) return hit.ids;
+    if (hit.inflight) {
+      metrics.hits++;
+      emit();
+      return hit.inflight;
+    }
+    if (hit.expiresAt > now) {
+      metrics.hits++;
+      emit();
+      return hit.ids;
+    }
   }
+  metrics.misses++;
+  emit();
 
   const inflight = (async () => {
     const { data, error } = await supabase.rpc("search_profile_user_ids", {
@@ -92,6 +102,7 @@ export async function searchUserIdsCached(query: string): Promise<string[]> {
     const ids = (data ?? []).map((p: any) => p.user_id as string);
     cache.set(key, { ids, expiresAt: Date.now() + TTL_MS });
     evictIfNeeded();
+    emit();
     return ids;
   })();
 
