@@ -313,6 +313,30 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           </div>
         )}
 
+        {isAdmin && (cacheMetrics.lookups > 0 || cacheMetrics.lastPrewarmDurationMs !== null) && (
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground border border-border/40 rounded-md px-2.5 py-1.5 bg-background/30">
+            <span className="font-medium text-foreground/80">Cache</span>
+            <span>
+              hit rate{" "}
+              <span className="font-mono text-foreground">
+                {(cacheMetrics.hitRate * 100).toFixed(0)}%
+              </span>
+              {" "}({cacheMetrics.hits}/{cacheMetrics.lookups})
+            </span>
+            <span>size <span className="font-mono text-foreground">{cacheMetrics.cacheSize}</span></span>
+            <span>primed <span className="font-mono text-foreground">{cacheMetrics.primedEntries}</span></span>
+            {cacheMetrics.lastPrewarmDurationMs !== null && (
+              <span>
+                last prewarm{" "}
+                <span className="font-mono text-foreground">
+                  {cacheMetrics.lastPrewarmDurationMs}ms
+                </span>
+                {" "}(×{cacheMetrics.prewarmCount})
+              </span>
+            )}
+          </div>
+        )}
+
         {filtersActive && !loading && (
           <p className="text-xs text-muted-foreground mb-2">
             Showing {runs.length} matching run{runs.length === 1 ? "" : "s"}
