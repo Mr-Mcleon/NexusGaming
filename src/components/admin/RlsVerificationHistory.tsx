@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { toast } from "@/hooks/use-toast";
-import { searchUserIdsCached, prewarmAdminUsernames } from "@/lib/usernameSearchCache";
+import { searchUserIdsCached, prewarmAdminUsernames, getCacheMetrics, subscribeCacheMetrics, type CacheMetrics } from "@/lib/usernameSearchCache";
 
 type Outcome = "pass" | "fail" | "warn" | "pending" | "running";
 
@@ -68,6 +68,12 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [totalCount, setTotalCount] = useState(0);
   const [testOptions, setTestOptions] = useState<string[]>([]);
   const [prewarming, setPrewarming] = useState(false);
+  const [cacheMetrics, setCacheMetrics] = useState<CacheMetrics>(() => getCacheMetrics());
+
+  useEffect(() => {
+    const unsub = subscribeCacheMetrics(setCacheMetrics);
+    return () => { unsub(); };
+  }, []);
 
   // Debounce username search
   useEffect(() => {
@@ -304,6 +310,30 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
             <Loader2 className="w-3 h-3 animate-spin" />
             Prewarming username cache…
+          </div>
+        )}
+
+        {isAdmin && (cacheMetrics.lookups > 0 || cacheMetrics.lastPrewarmDurationMs !== null) && (
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground border border-border/40 rounded-md px-2.5 py-1.5 bg-background/30">
+            <span className="font-medium text-foreground/80">Cache</span>
+            <span>
+              hit rate{" "}
+              <span className="font-mono text-foreground">
+                {(cacheMetrics.hitRate * 100).toFixed(0)}%
+              </span>
+              {" "}({cacheMetrics.hits}/{cacheMetrics.lookups})
+            </span>
+            <span>size <span className="font-mono text-foreground">{cacheMetrics.cacheSize}</span></span>
+            <span>primed <span className="font-mono text-foreground">{cacheMetrics.primedEntries}</span></span>
+            {cacheMetrics.lastPrewarmDurationMs !== null && (
+              <span>
+                last prewarm{" "}
+                <span className="font-mono text-foreground">
+                  {cacheMetrics.lastPrewarmDurationMs}ms
+                </span>
+                {" "}(×{cacheMetrics.prewarmCount})
+              </span>
+            )}
           </div>
         )}
 

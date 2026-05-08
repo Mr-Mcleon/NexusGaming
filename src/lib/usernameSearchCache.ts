@@ -10,6 +10,56 @@ const TTL_MS = 30_000; // 30s — long enough to cover typing + a few re-renders
 const MAX_ENTRIES = 50;
 const cache = new Map<string, CacheEntry>();
 
+// --- Metrics ---
+export interface CacheMetrics {
+  hits: number;
+  misses: number;
+  lookups: number;
+  hitRate: number; // 0..1
+  lastPrewarmDurationMs: number | null;
+  lastPrewarmAt: number | null;
+  prewarmCount: number;
+  primedEntries: number;
+  cacheSize: number;
+}
+
+const metrics = {
+  hits: 0,
+  misses: 0,
+  lastPrewarmDurationMs: null as number | null,
+  prewarmCount: 0,
+  primedEntries: 0,
+};
+
+type Listener = (m: CacheMetrics) => void;
+const listeners = new Set<Listener>();
+
+export function getCacheMetrics(): CacheMetrics {
+  const lookups = metrics.hits + metrics.misses;
+  return {
+    hits: metrics.hits,
+    misses: metrics.misses,
+    lookups,
+    hitRate: lookups > 0 ? metrics.hits / lookups : 0,
+    lastPrewarmDurationMs: metrics.lastPrewarmDurationMs,
+    lastPrewarmAt: lastPrewarmAt || null,
+    prewarmCount: metrics.prewarmCount,
+    primedEntries: metrics.primedEntries,
+    cacheSize: cache.size,
+  };
+}
+
+export function subscribeCacheMetrics(fn: Listener): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+const emit = () => {
+  const snapshot = getCacheMetrics();
+  listeners.forEach((l) => l(snapshot));
+};
+
+
 const norm = (q: string) => q.trim().toLowerCase();
 
 const evictIfNeeded = () => {
@@ -26,9 +76,19 @@ export async function searchUserIdsCached(query: string): Promise<string[]> {
   const now = Date.now();
   const hit = cache.get(key);
   if (hit) {
-    if (hit.inflight) return hit.inflight;
-    if (hit.expiresAt > now) return hit.ids;
+    if (hit.inflight) {
+      metrics.hits++;
+      emit();
+      return hit.inflight;
+    }
+    if (hit.expiresAt > now) {
+      metrics.hits++;
+      emit();
+      return hit.ids;
+    }
   }
+  metrics.misses++;
+  emit();
 
   const inflight = (async () => {
     const { data, error } = await supabase.rpc("search_profile_user_ids", {
@@ -42,6 +102,7 @@ export async function searchUserIdsCached(query: string): Promise<string[]> {
     const ids = (data ?? []).map((p: any) => p.user_id as string);
     cache.set(key, { ids, expiresAt: Date.now() + TTL_MS });
     evictIfNeeded();
+    emit();
     return ids;
   })();
 
@@ -67,6 +128,8 @@ export function primeUsernameCache(username: string, userIds: string[]) {
   if (!key) return;
   cache.set(key, { ids: userIds, expiresAt: Date.now() + TTL_MS });
   evictIfNeeded();
+  metrics.primedEntries++;
+  emit();
 }
 
 let prewarmInflight: Promise<void> | null = null;
@@ -81,6 +144,7 @@ export async function prewarmAdminUsernames(): Promise<void> {
   if (prewarmInflight) return prewarmInflight;
   if (Date.now() - lastPrewarmAt < PREWARM_COOLDOWN_MS) return;
 
+  const startedAt = performance.now();
   prewarmInflight = (async () => {
     try {
       const { data: roles } = await supabase
@@ -100,8 +164,17 @@ export async function prewarmAdminUsernames(): Promise<void> {
       });
       lastPrewarmAt = Date.now();
     } finally {
+      const duration = Math.round(performance.now() - startedAt);
+      metrics.lastPrewarmDurationMs = duration;
+      metrics.prewarmCount++;
       prewarmInflight = null;
+      // eslint-disable-next-line no-console
+      console.info(
+        `[usernameSearchCache] prewarm completed in ${duration}ms (cacheSize=${cache.size}, primedEntries=${metrics.primedEntries})`
+      );
+      emit();
     }
   })();
   return prewarmInflight;
 }
+
