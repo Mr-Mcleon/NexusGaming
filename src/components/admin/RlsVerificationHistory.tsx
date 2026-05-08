@@ -67,6 +67,7 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [testFilter, setTestFilter] = useState<string>("all");
   const [totalCount, setTotalCount] = useState(0);
   const [testOptions, setTestOptions] = useState<string[]>([]);
+  const [prewarming, setPrewarming] = useState(false);
 
   // Debounce username search
   useEffect(() => {
