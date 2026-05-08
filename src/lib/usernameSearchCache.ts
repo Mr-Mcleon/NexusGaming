@@ -128,6 +128,8 @@ export function primeUsernameCache(username: string, userIds: string[]) {
   if (!key) return;
   cache.set(key, { ids: userIds, expiresAt: Date.now() + TTL_MS });
   evictIfNeeded();
+  metrics.primedEntries++;
+  emit();
 }
 
 let prewarmInflight: Promise<void> | null = null;
@@ -142,6 +144,7 @@ export async function prewarmAdminUsernames(): Promise<void> {
   if (prewarmInflight) return prewarmInflight;
   if (Date.now() - lastPrewarmAt < PREWARM_COOLDOWN_MS) return;
 
+  const startedAt = performance.now();
   prewarmInflight = (async () => {
     try {
       const { data: roles } = await supabase
@@ -161,8 +164,17 @@ export async function prewarmAdminUsernames(): Promise<void> {
       });
       lastPrewarmAt = Date.now();
     } finally {
+      const duration = Math.round(performance.now() - startedAt);
+      metrics.lastPrewarmDurationMs = duration;
+      metrics.prewarmCount++;
       prewarmInflight = null;
+      // eslint-disable-next-line no-console
+      console.info(
+        `[usernameSearchCache] prewarm completed in ${duration}ms (cacheSize=${cache.size}, primedEntries=${metrics.primedEntries})`
+      );
+      emit();
     }
   })();
   return prewarmInflight;
 }
+
