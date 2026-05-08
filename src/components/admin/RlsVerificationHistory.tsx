@@ -68,6 +68,12 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
   const [totalCount, setTotalCount] = useState(0);
   const [testOptions, setTestOptions] = useState<string[]>([]);
   const [prewarming, setPrewarming] = useState(false);
+  const [cacheMetrics, setCacheMetrics] = useState<CacheMetrics>(() => getCacheMetrics());
+
+  useEffect(() => {
+    const unsub = subscribeCacheMetrics(setCacheMetrics);
+    return () => { unsub(); };
+  }, []);
 
   // Debounce username search
   useEffect(() => {
