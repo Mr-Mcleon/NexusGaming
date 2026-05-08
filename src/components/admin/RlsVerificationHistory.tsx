@@ -300,6 +300,13 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
           </div>
         )}
 
+        {prewarming && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Prewarming username cache…
+          </div>
+        )}
+
         {filtersActive && !loading && (
           <p className="text-xs text-muted-foreground mb-2">
             Showing {runs.length} matching run{runs.length === 1 ? "" : "s"}
