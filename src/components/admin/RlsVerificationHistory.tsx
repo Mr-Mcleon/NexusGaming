@@ -174,7 +174,8 @@ export function RlsVerificationHistory({ refreshKey }: Props) {
     if (user) {
       loadTestOptions();
       // Prewarm cache so admin username searches resolve instantly
-      prewarmAdminUsernames();
+      setPrewarming(true);
+      prewarmAdminUsernames().finally(() => setPrewarming(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refreshKey]);
