@@ -333,6 +333,9 @@ export default function Settings() {
         {/* Account Sync Section */}
         <AccountSyncSection />
 
+        {/* Linked Platform Accounts */}
+        <LinkedAccountsSection />
+
         {/* Notification Settings Section */}
         <div className="glass-card rounded-xl p-6 mb-6">
           <h2 className="font-medium mb-4">Notifications</h2>
