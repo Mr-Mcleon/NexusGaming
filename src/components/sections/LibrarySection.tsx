@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { useExternalGames, useDeleteExternalGame, PLATFORM_LABELS, ExternalGame } from "@/hooks/useLinkedAccounts";
 
 type FilterType = "all" | "favorites" | "recent" | "wishlist" | "external";
 type ViewType = "grid" | "list";
