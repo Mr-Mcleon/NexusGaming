@@ -186,6 +186,59 @@ export type Database = {
         }
         Relationships: []
       }
+      external_games: {
+        Row: {
+          cover_image_url: string | null
+          external_id: string | null
+          id: string
+          imported_at: string
+          installed: boolean
+          last_played_at: string | null
+          linked_account_id: string | null
+          metadata: Json
+          platform: string
+          playtime_minutes: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          external_id?: string | null
+          id?: string
+          imported_at?: string
+          installed?: boolean
+          last_played_at?: string | null
+          linked_account_id?: string | null
+          metadata?: Json
+          platform: string
+          playtime_minutes?: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          external_id?: string | null
+          id?: string
+          imported_at?: string
+          installed?: boolean
+          last_played_at?: string | null
+          linked_account_id?: string | null
+          metadata?: Json
+          platform?: string
+          playtime_minutes?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_games_linked_account_id_fkey"
+            columns: ["linked_account_id"]
+            isOneToOne: false
+            referencedRelation: "linked_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           created_at: string
@@ -334,6 +387,42 @@ export type Database = {
           sale_price?: number | null
           tags?: string[] | null
           title?: string
+        }
+        Relationships: []
+      }
+      linked_accounts: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          last_synced_at: string | null
+          metadata: Json
+          platform: string
+          platform_user_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          platform: string
+          platform_user_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          platform?: string
+          platform_user_id?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

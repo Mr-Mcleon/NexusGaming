@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy, Bell, BellOff, X, Link, Check, RefreshCw } from "lucide-react";
+import { Search, Grid, List, SlidersHorizontal, ChevronDown, Cloud, Download, HardDrive, Heart, Play, Clock, Square, Bookmark, Tag, ArrowUpDown, Share2, FileJson, FileSpreadsheet, Copy, Bell, BellOff, X, Link, Check, RefreshCw, Gamepad2 as Gamepad2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserLibrary, useToggleFavorite, useRemoveFromLibrary, useUpdatePlayTime, useAddToLibrary, LibraryEntry } from "@/hooks/useGames";
@@ -14,8 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { useExternalGames, useDeleteExternalGame, PLATFORM_LABELS, ExternalGame } from "@/hooks/useLinkedAccounts";
 
-type FilterType = "all" | "favorites" | "recent" | "wishlist";
+type FilterType = "all" | "favorites" | "recent" | "wishlist" | "external";
 type ViewType = "grid" | "list";
 type WishlistSortType = "date_added" | "name" | "price_low" | "price_high" | "discount";
 
@@ -510,6 +511,111 @@ const WishlistGameCard = ({
   );
 };
 
+const ExternalGamesGrid = ({
+  games,
+  isLoading,
+  view,
+  onDelete,
+}: {
+  games: ExternalGame[];
+  isLoading: boolean;
+  view: ViewType;
+  onDelete: (id: string) => void;
+}) => {
+  const navigate = useNavigate();
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="aspect-[3/4] rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+  if (games.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <Link className="w-12 h-12 mb-4 opacity-50" />
+        <p className="text-lg font-medium">No external games yet</p>
+        <p className="text-sm">
+          Link an account in Settings → Linked Accounts and import your library.
+        </p>
+        <Button variant="gaming" size="sm" className="mt-4" onClick={() => navigate("/settings")}>
+          Open Settings
+        </Button>
+      </div>
+    );
+  }
+  if (view === "list") {
+    return (
+      <div className="space-y-3">
+        {games.map((g) => (
+          <div key={g.id} className="glass-card rounded-xl p-4 flex items-center gap-4">
+            <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-secondary/50 flex items-center justify-center">
+              {g.cover_image_url ? (
+                <img src={g.cover_image_url} alt={g.title} className="w-full h-full object-cover" />
+              ) : (
+                <Gamepad2Icon className="w-8 h-8 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium truncate">{g.title}</h3>
+                <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">
+                  {PLATFORM_LABELS[g.platform]}
+                </span>
+              </div>
+              {g.playtime_minutes > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  <Clock className="w-3 h-3 inline mr-1" />
+                  {formatPlayTime(g.playtime_minutes)}
+                </p>
+              )}
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => onDelete(g.id)}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+      {games.map((g) => (
+        <div key={g.id} className="group relative rounded-xl overflow-hidden bg-card border border-border/50">
+          <div className="aspect-[3/4] overflow-hidden bg-secondary/40 flex items-center justify-center">
+            {g.cover_image_url ? (
+              <img src={g.cover_image_url} alt={g.title} className="w-full h-full object-cover" />
+            ) : (
+              <Gamepad2Icon className="w-12 h-12 text-muted-foreground" />
+            )}
+          </div>
+          <button
+            onClick={() => onDelete(g.id)}
+            className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Remove"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="absolute top-2 left-2 px-2 py-0.5 bg-primary/80 text-primary-foreground text-[10px] rounded-full">
+            {PLATFORM_LABELS[g.platform]}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-transparent">
+            <h3 className="font-medium text-sm truncate">{g.title}</h3>
+            {g.playtime_minutes > 0 && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <Clock className="w-3 h-3" />
+                {formatPlayTime(g.playtime_minutes)}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const LibrarySection = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
@@ -522,6 +628,8 @@ export const LibrarySection = () => {
   
   const { data: library = [], isLoading } = useUserLibrary();
   const { data: wishlist = [], isLoading: isLoadingWishlist } = useWishlistWithGames();
+  const { data: externalGames = [], isLoading: isLoadingExternal } = useExternalGames();
+  const deleteExternal = useDeleteExternalGame();
   const { data: priceAlerts = [] } = usePriceAlerts();
   const { setPlaying, stopPlaying } = useSetPlayingStatus();
   const updatePlayTime = useUpdatePlayTime();
@@ -666,11 +774,16 @@ export const LibrarySection = () => {
     { id: "discount", label: "Discount %" },
   ];
 
+  const filteredExternal = externalGames.filter((g) =>
+    g.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   const filterOptions: { id: FilterType; label: string; icon: React.ComponentType<{ className?: string }>; count: number }[] = [
     { id: "all", label: "All Games", icon: Grid, count: library.length },
     { id: "favorites", label: "Favorites", icon: Heart, count: library.filter(e => e.is_favorite).length },
     { id: "recent", label: "Recently Played", icon: Clock, count: library.filter(e => e.last_played_at).length },
     { id: "wishlist", label: "Wishlist", icon: Bookmark, count: wishlist.length },
+    { id: "external", label: "External", icon: Link, count: externalGames.length },
   ];
 
   return (
@@ -681,10 +794,11 @@ export const LibrarySection = () => {
           <div>
             <h1 className="font-display text-2xl font-bold mb-1">My Library</h1>
             <p className="text-muted-foreground">
-              {filter === "wishlist" 
+              {filter === "wishlist"
                 ? `${filteredWishlist.length} games in your wishlist`
-                : `${filteredLibrary.length} games in your collection`
-              }
+                : filter === "external"
+                  ? `${filteredExternal.length} imported from linked accounts`
+                  : `${filteredLibrary.length} games in your collection`}
             </p>
           </div>
 
@@ -969,7 +1083,14 @@ export const LibrarySection = () => {
 
       {/* Games Grid/List */}
       <div className="flex-1 overflow-y-auto scrollbar-gaming p-6">
-        {filter === "wishlist" ? (
+        {filter === "external" ? (
+          <ExternalGamesGrid
+            games={filteredExternal}
+            isLoading={isLoadingExternal}
+            view={view}
+            onDelete={(id) => deleteExternal.mutate(id)}
+          />
+        ) : filter === "wishlist" ? (
           // Wishlist View
           <>
             {isLoadingWishlist ? (

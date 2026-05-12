@@ -17,6 +17,7 @@ import { useEmailPreferences } from "@/hooks/useEmailPreferences";
 import { useQuery } from "@tanstack/react-query";
 import { ThemePreviewCard } from "@/components/settings/ThemePreviewCard";
 import { AccountSyncSection } from "@/components/settings/AccountSyncSection";
+import { LinkedAccountsSection } from "@/components/settings/LinkedAccountsSection";
 import { useAccountSync } from "@/hooks/useAccountSync";
 import { ProfileCustomizationEditor } from "@/components/profile/ProfileCustomizationEditor";
 
@@ -331,6 +332,9 @@ export default function Settings() {
 
         {/* Account Sync Section */}
         <AccountSyncSection />
+
+        {/* Linked Platform Accounts */}
+        <LinkedAccountsSection />
 
         {/* Notification Settings Section */}
         <div className="glass-card rounded-xl p-6 mb-6">
