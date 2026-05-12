@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
-type FilterType = "all" | "favorites" | "recent" | "wishlist";
+type FilterType = "all" | "favorites" | "recent" | "wishlist" | "external";
 type ViewType = "grid" | "list";
 type WishlistSortType = "date_added" | "name" | "price_low" | "price_high" | "discount";
 
