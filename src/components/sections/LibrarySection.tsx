@@ -523,6 +523,8 @@ export const LibrarySection = () => {
   
   const { data: library = [], isLoading } = useUserLibrary();
   const { data: wishlist = [], isLoading: isLoadingWishlist } = useWishlistWithGames();
+  const { data: externalGames = [], isLoading: isLoadingExternal } = useExternalGames();
+  const deleteExternal = useDeleteExternalGame();
   const { data: priceAlerts = [] } = usePriceAlerts();
   const { setPlaying, stopPlaying } = useSetPlayingStatus();
   const updatePlayTime = useUpdatePlayTime();
