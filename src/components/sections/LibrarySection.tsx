@@ -978,7 +978,14 @@ export const LibrarySection = () => {
 
       {/* Games Grid/List */}
       <div className="flex-1 overflow-y-auto scrollbar-gaming p-6">
-        {filter === "wishlist" ? (
+        {filter === "external" ? (
+          <ExternalGamesGrid
+            games={filteredExternal}
+            isLoading={isLoadingExternal}
+            view={view}
+            onDelete={(id) => deleteExternal.mutate(id)}
+          />
+        ) : filter === "wishlist" ? (
           // Wishlist View
           <>
             {isLoadingWishlist ? (
