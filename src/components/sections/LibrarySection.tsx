@@ -689,10 +689,11 @@ export const LibrarySection = () => {
           <div>
             <h1 className="font-display text-2xl font-bold mb-1">My Library</h1>
             <p className="text-muted-foreground">
-              {filter === "wishlist" 
+              {filter === "wishlist"
                 ? `${filteredWishlist.length} games in your wishlist`
-                : `${filteredLibrary.length} games in your collection`
-              }
+                : filter === "external"
+                  ? `${filteredExternal.length} imported from linked accounts`
+                  : `${filteredLibrary.length} games in your collection`}
             </p>
           </div>
 
