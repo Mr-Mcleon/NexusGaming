@@ -17,6 +17,7 @@ import { useEmailPreferences } from "@/hooks/useEmailPreferences";
 import { useQuery } from "@tanstack/react-query";
 import { ThemePreviewCard } from "@/components/settings/ThemePreviewCard";
 import { AccountSyncSection } from "@/components/settings/AccountSyncSection";
+import { LinkedAccountsSection } from "@/components/settings/LinkedAccountsSection";
 import { useAccountSync } from "@/hooks/useAccountSync";
 import { ProfileCustomizationEditor } from "@/components/profile/ProfileCustomizationEditor";
 
