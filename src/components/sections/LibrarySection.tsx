@@ -669,11 +669,16 @@ export const LibrarySection = () => {
     { id: "discount", label: "Discount %" },
   ];
 
+  const filteredExternal = externalGames.filter((g) =>
+    g.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   const filterOptions: { id: FilterType; label: string; icon: React.ComponentType<{ className?: string }>; count: number }[] = [
     { id: "all", label: "All Games", icon: Grid, count: library.length },
     { id: "favorites", label: "Favorites", icon: Heart, count: library.filter(e => e.is_favorite).length },
     { id: "recent", label: "Recently Played", icon: Clock, count: library.filter(e => e.last_played_at).length },
     { id: "wishlist", label: "Wishlist", icon: Bookmark, count: wishlist.length },
+    { id: "external", label: "External", icon: Link, count: externalGames.length },
   ];
 
   return (
