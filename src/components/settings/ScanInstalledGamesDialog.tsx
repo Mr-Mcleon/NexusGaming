@@ -58,10 +58,21 @@ export const ScanInstalledGamesDialog = () => {
   const { data: accounts = [] } = useLinkedAccounts();
   const importGames = useImportExternalGames();
 
+  const [customExt, setCustomExt] = useState(".mfst");
+  const [customTitleRegex, setCustomTitleRegex] = useState("");
+  const [customIdRegex, setCustomIdRegex] = useState("");
+  const [customRecurse, setCustomRecurse] = useState(true);
+
   const handleScan = async () => {
     setScanning(true);
     try {
-      const found = await pickAndScan(kind, genericPlatform);
+      const found = await pickAndScan(kind, genericPlatform, {
+        platform: genericPlatform,
+        manifestExt: customExt.trim() || undefined,
+        titleRegex: customTitleRegex.trim() || undefined,
+        idRegex: customIdRegex.trim() || undefined,
+        recurse: customRecurse,
+      });
       setResults(found);
       if (!found.length) toast.info("No installed games detected in that folder");
       else toast.success(`Found ${found.length} game${found.length === 1 ? "" : "s"}`);
@@ -135,7 +146,7 @@ export const ScanInstalledGamesDialog = () => {
             </p>
           </div>
 
-          {kind === "generic" && (
+          {(kind === "generic" || kind === "custom") && (
             <div className="space-y-2">
               <Label>Tag as platform</Label>
               <Select value={genericPlatform} onValueChange={(v) => setGenericPlatform(v as Platform)}>
