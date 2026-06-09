@@ -19,6 +19,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { HardDriveDownload, FolderSearch, Loader2, AlertTriangle } from "lucide-react";
 import {
   isFileSystemAccessSupported,
@@ -26,6 +28,7 @@ import {
   groupByPlatform,
   type ScanKind,
   type ScannedGame,
+  type CustomScanOptions,
 } from "@/lib/installedGameScanner";
 import {
   PLATFORM_LABELS,
@@ -39,6 +42,9 @@ const SCAN_OPTIONS: { kind: ScanKind; label: string; hint: string }[] = [
   { kind: "steam", label: "Steam library", hint: "Pick your steamapps/ folder (or its parent)" },
   { kind: "epic", label: "Epic Games", hint: "Pick the EpicGamesLauncher Manifests folder" },
   { kind: "gog", label: "GOG Galaxy", hint: "Pick your GOG Games folder" },
+  { kind: "battlenet", label: "Battle.net", hint: "Pick your Battle.net install root (parent of game folders)" },
+  { kind: "ea", label: "EA app / Origin", hint: "Pick ProgramData/Electronic Arts or Origin LocalContent" },
+  { kind: "custom", label: "Custom rule", hint: "Define manifest extension and optional title/id regex" },
   { kind: "generic", label: "Generic folder", hint: "Each subfolder is treated as a game" },
 ];
 
@@ -52,10 +58,21 @@ export const ScanInstalledGamesDialog = () => {
   const { data: accounts = [] } = useLinkedAccounts();
   const importGames = useImportExternalGames();
 
+  const [customExt, setCustomExt] = useState(".mfst");
+  const [customTitleRegex, setCustomTitleRegex] = useState("");
+  const [customIdRegex, setCustomIdRegex] = useState("");
+  const [customRecurse, setCustomRecurse] = useState(true);
+
   const handleScan = async () => {
     setScanning(true);
     try {
-      const found = await pickAndScan(kind, genericPlatform);
+      const found = await pickAndScan(kind, genericPlatform, {
+        platform: genericPlatform,
+        manifestExt: customExt.trim() || undefined,
+        titleRegex: customTitleRegex.trim() || undefined,
+        idRegex: customIdRegex.trim() || undefined,
+        recurse: customRecurse,
+      });
       setResults(found);
       if (!found.length) toast.info("No installed games detected in that folder");
       else toast.success(`Found ${found.length} game${found.length === 1 ? "" : "s"}`);
@@ -129,7 +146,7 @@ export const ScanInstalledGamesDialog = () => {
             </p>
           </div>
 
-          {kind === "generic" && (
+          {(kind === "generic" || kind === "custom") && (
             <div className="space-y-2">
               <Label>Tag as platform</Label>
               <Select value={genericPlatform} onValueChange={(v) => setGenericPlatform(v as Platform)}>
@@ -144,6 +161,42 @@ export const ScanInstalledGamesDialog = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {kind === "custom" && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Manifest file extension</Label>
+                <Input
+                  value={customExt}
+                  onChange={(e) => setCustomExt(e.target.value)}
+                  placeholder=".mfst"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Title regex (1st capture group)</Label>
+                <Input
+                  value={customTitleRegex}
+                  onChange={(e) => setCustomTitleRegex(e.target.value)}
+                  placeholder='"DisplayName":\s*"([^"]+)"'
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ID regex (optional)</Label>
+                <Input
+                  value={customIdRegex}
+                  onChange={(e) => setCustomIdRegex(e.target.value)}
+                  placeholder="id=([^&]+)"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={customRecurse}
+                  onCheckedChange={(c) => setCustomRecurse(c === true)}
+                />
+                Search subfolders
+              </label>
             </div>
           )}
 
