@@ -164,6 +164,42 @@ export const ScanInstalledGamesDialog = () => {
             </div>
           )}
 
+          {kind === "custom" && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Manifest file extension</Label>
+                <Input
+                  value={customExt}
+                  onChange={(e) => setCustomExt(e.target.value)}
+                  placeholder=".mfst"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Title regex (1st capture group)</Label>
+                <Input
+                  value={customTitleRegex}
+                  onChange={(e) => setCustomTitleRegex(e.target.value)}
+                  placeholder='"DisplayName":\s*"([^"]+)"'
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ID regex (optional)</Label>
+                <Input
+                  value={customIdRegex}
+                  onChange={(e) => setCustomIdRegex(e.target.value)}
+                  placeholder="id=([^&]+)"
+                />
+              </div>
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={customRecurse}
+                  onCheckedChange={(c) => setCustomRecurse(c === true)}
+                />
+                Search subfolders
+              </label>
+            </div>
+          )}
+
           <Button onClick={handleScan} disabled={!supported || scanning} className="w-full">
             {scanning ? (
               <Loader2 className="w-4 h-4 animate-spin" />
