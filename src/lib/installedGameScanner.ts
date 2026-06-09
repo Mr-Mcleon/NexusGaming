@@ -35,7 +35,7 @@ async function scanSteamDir(dir: FileSystemDirectoryHandle): Promise<ScannedGame
   } catch {
     // assume `dir` is already steamapps
   }
-  // @ts-expect-error - entries() exists on async iterators
+  // @ts-ignore
   for await (const [name, handle] of steamapps.entries()) {
     if (
       handle.kind === "file" &&
@@ -78,7 +78,7 @@ async function scanEpicDir(dir: FileSystemDirectoryHandle): Promise<ScannedGame[
       /* try next */
     }
   }
-  // @ts-expect-error - entries()
+  // @ts-ignore
   for await (const [name, handle] of manifests.entries()) {
     if (handle.kind !== "file" || !name.endsWith(".item")) continue;
     try {
@@ -105,14 +105,14 @@ async function scanGenericDir(
   platform: Platform,
 ): Promise<ScannedGame[]> {
   const games: ScannedGame[] = [];
-  // @ts-expect-error - entries()
+  // @ts-ignore
   for await (const [name, handle] of dir.entries()) {
     if (handle.kind !== "directory") continue;
     let title = name;
     let id: string | undefined;
     try {
       const sub = handle as FileSystemDirectoryHandle;
-      // @ts-expect-error
+      // @ts-ignore
       for await (const [fname, fhandle] of sub.entries()) {
         if (
           fhandle.kind === "file" &&
