@@ -35,6 +35,7 @@ import {
   ImportableGame,
 } from "@/hooks/useLinkedAccounts";
 import { toast } from "sonner";
+import { ScanInstalledGamesDialog } from "@/components/settings/ScanInstalledGamesDialog";
 
 const PLATFORMS: Platform[] = ["steam", "xbox", "playstation", "google_play", "other"];
 
@@ -132,6 +133,8 @@ export const LinkedAccountsSection = () => {
           <Link2 className="w-5 h-5 text-muted-foreground" />
           <h2 className="font-medium">Linked Accounts</h2>
         </div>
+        <div className="flex items-center gap-2">
+          <ScanInstalledGamesDialog />
         <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="gaming">
