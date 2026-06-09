@@ -19,6 +19,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { HardDriveDownload, FolderSearch, Loader2, AlertTriangle } from "lucide-react";
 import {
   isFileSystemAccessSupported,
@@ -26,6 +28,7 @@ import {
   groupByPlatform,
   type ScanKind,
   type ScannedGame,
+  type CustomScanOptions,
 } from "@/lib/installedGameScanner";
 import {
   PLATFORM_LABELS,
@@ -39,6 +42,9 @@ const SCAN_OPTIONS: { kind: ScanKind; label: string; hint: string }[] = [
   { kind: "steam", label: "Steam library", hint: "Pick your steamapps/ folder (or its parent)" },
   { kind: "epic", label: "Epic Games", hint: "Pick the EpicGamesLauncher Manifests folder" },
   { kind: "gog", label: "GOG Galaxy", hint: "Pick your GOG Games folder" },
+  { kind: "battlenet", label: "Battle.net", hint: "Pick your Battle.net install root (parent of game folders)" },
+  { kind: "ea", label: "EA app / Origin", hint: "Pick ProgramData/Electronic Arts or Origin LocalContent" },
+  { kind: "custom", label: "Custom rule", hint: "Define manifest extension and optional title/id regex" },
   { kind: "generic", label: "Generic folder", hint: "Each subfolder is treated as a game" },
 ];
 
