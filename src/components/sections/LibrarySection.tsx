@@ -871,7 +871,12 @@ export const LibrarySection = () => {
               {filter === "wishlist"
                 ? `${filteredWishlist.length} games in your wishlist`
                 : filter === "external"
-                  ? `${filteredExternal.length} imported from linked accounts`
+                  ? (() => {
+                      const uniq = new Set(filteredExternal.map((g) => g.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim())).size;
+                      return uniq === filteredExternal.length
+                        ? `${filteredExternal.length} imported from linked accounts`
+                        : `${uniq} unique titles · ${filteredExternal.length} entries across platforms`;
+                    })()
                   : `${filteredLibrary.length} games in your collection`}
             </p>
           </div>
