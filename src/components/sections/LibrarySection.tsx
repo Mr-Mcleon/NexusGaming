@@ -515,11 +515,18 @@ const WishlistGameCard = ({
 const normalizeExternalTitle = (t: string) =>
   t.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
+interface PlatformPlaytime {
+  platform: ExternalGame["platform"];
+  minutes: number;
+  count: number;
+}
+
 interface MergedExternalGame {
   key: string;
   title: string;
   cover_image_url?: string | null;
   totalPlaytime: number;
+  byPlatform: PlatformPlaytime[];
   entries: ExternalGame[];
 }
 
@@ -527,23 +534,68 @@ const mergeExternalGames = (games: ExternalGame[]): MergedExternalGame[] => {
   const map = new Map<string, MergedExternalGame>();
   for (const g of games) {
     const key = normalizeExternalTitle(g.title);
+    const minutes = g.playtime_minutes ?? 0;
     const existing = map.get(key);
     if (existing) {
       existing.entries.push(g);
-      existing.totalPlaytime += g.playtime_minutes ?? 0;
+      existing.totalPlaytime += minutes;
       if (!existing.cover_image_url && g.cover_image_url) existing.cover_image_url = g.cover_image_url;
       if (g.title.length > existing.title.length) existing.title = g.title;
+      const bp = existing.byPlatform.find((p) => p.platform === g.platform);
+      if (bp) {
+        bp.minutes += minutes;
+        bp.count += 1;
+      } else {
+        existing.byPlatform.push({ platform: g.platform, minutes, count: 1 });
+      }
     } else {
       map.set(key, {
         key,
         title: g.title,
         cover_image_url: g.cover_image_url,
-        totalPlaytime: g.playtime_minutes ?? 0,
+        totalPlaytime: minutes,
+        byPlatform: [{ platform: g.platform, minutes, count: 1 }],
         entries: [g],
       });
     }
   }
+  for (const m of map.values()) {
+    m.byPlatform.sort((a, b) => b.minutes - a.minutes);
+  }
   return Array.from(map.values()).sort((a, b) => a.title.localeCompare(b.title));
+};
+
+const PlaytimeBreakdown = ({ merged }: { merged: MergedExternalGame }) => {
+  const total = merged.totalPlaytime;
+  return (
+    <div className="w-56">
+      <div className="flex items-baseline justify-between mb-2 pb-2 border-b border-border/50">
+        <span className="text-xs uppercase tracking-wide text-muted-foreground">Total playtime</span>
+        <span className="text-sm font-semibold tabular-nums">{formatPlayTime(total)}</span>
+      </div>
+      <ul className="space-y-1.5">
+        {merged.byPlatform.map((p) => {
+          const pct = total > 0 ? Math.round((p.minutes / total) * 100) : 0;
+          return (
+            <li key={p.platform} className="text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate">{PLATFORM_LABELS[p.platform]}</span>
+                <span className="text-muted-foreground tabular-nums shrink-0">
+                  {p.minutes > 0 ? formatPlayTime(p.minutes) : "—"}
+                  {total > 0 && p.minutes > 0 && ` · ${pct}%`}
+                </span>
+              </div>
+              {total > 0 && (
+                <div className="mt-1 h-1 rounded-full bg-secondary/60 overflow-hidden">
+                  <div className="h-full bg-primary/70" style={{ width: `${pct}%` }} />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 };
 
 const PlatformChips = ({
@@ -570,6 +622,41 @@ const PlatformChips = ({
         </span>
       ))}
     </div>
+  );
+};
+
+const TotalPlaytimePill = ({
+  merged,
+  variant = "muted",
+}: {
+  merged: MergedExternalGame;
+  variant?: "muted" | "overlay";
+}) => {
+  if (merged.totalPlaytime <= 0) return null;
+  const base =
+    variant === "overlay"
+      ? "bg-background/70 hover:bg-background/90 text-foreground"
+      : "bg-secondary/60 hover:bg-secondary text-foreground";
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs backdrop-blur-sm transition-colors ${base}`}
+          title="View per-platform breakdown"
+        >
+          <Clock className="w-3 h-3" />
+          <span className="tabular-nums">{formatPlayTime(merged.totalPlaytime)}</span>
+          <span className="opacity-70">total</span>
+          {merged.byPlatform.length > 1 && (
+            <span className="opacity-70">· {merged.byPlatform.length}</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="top" align="start" className="p-3 w-auto">
+        <PlaytimeBreakdown merged={merged} />
+      </PopoverContent>
+    </Popover>
   );
 };
 
@@ -628,11 +715,9 @@ const ExternalGamesGrid = ({
                 <PlatformChips entries={m.entries} />
               </div>
               {m.totalPlaytime > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  <Clock className="w-3 h-3 inline mr-1" />
-                  {formatPlayTime(m.totalPlaytime)}
-                  {m.entries.length > 1 && <span className="ml-1 opacity-70">(combined)</span>}
-                </p>
+                <div className="mt-2">
+                  <TotalPlaytimePill merged={m} />
+                </div>
               )}
             </div>
             <Button
@@ -672,17 +757,9 @@ const ExternalGamesGrid = ({
           <div className="absolute top-2 left-2 max-w-[calc(100%-3rem)]">
             <PlatformChips entries={m.entries} size="xs" />
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-transparent space-y-2">
             <h3 className="font-medium text-sm truncate">{m.title}</h3>
-            {m.totalPlaytime > 0 && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                <Clock className="w-3 h-3" />
-                {formatPlayTime(m.totalPlaytime)}
-                {m.entries.length > 1 && (
-                  <span className="opacity-70">· {m.entries.length}×</span>
-                )}
-              </p>
-            )}
+            {m.totalPlaytime > 0 && <TotalPlaytimePill merged={m} variant="overlay" />}
           </div>
         </div>
       ))}
