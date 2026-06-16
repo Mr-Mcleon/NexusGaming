@@ -33,6 +33,7 @@ export const useMergedPlaytimeCache = (merged: MergedLike[]) => {
   const [snapshot, setSnapshot] = useState<PlaytimeSnapshot | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pendingAutoRefresh, setPendingAutoRefresh] = useState(false);
 
   // Hydrate cached snapshot once on mount / user change.
   useEffect(() => {
@@ -69,8 +70,16 @@ export const useMergedPlaytimeCache = (merged: MergedLike[]) => {
     [user?.id],
   );
 
-  // Auto-persist when there is no snapshot yet or when totals diverged
-  // significantly from cache (so freshly imported games are captured).
+  // Listen for completed imports/re-scans and queue an auto-refresh that fires
+  // once the freshly fetched merged data has propagated to this hook.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => setPendingAutoRefresh(true);
+    window.addEventListener("external-games:imported", handler);
+    return () => window.removeEventListener("external-games:imported", handler);
+  }, []);
+
+  // Auto-persist when stale, or when a re-scan just completed.
   useEffect(() => {
     if (!user || !isHydrated) return;
     const liveTotal = merged.reduce((s, m) => s + m.totalPlaytime, 0);
@@ -78,10 +87,12 @@ export const useMergedPlaytimeCache = (merged: MergedLike[]) => {
       !snapshot ||
       snapshot.entries.length !== merged.length ||
       snapshot.totalMinutes !== liveTotal;
-    if (stale) {
-      void persist(merged);
+    if (stale || pendingAutoRefresh) {
+      void persist(merged).then(() => {
+        if (pendingAutoRefresh) setPendingAutoRefresh(false);
+      });
     }
-  }, [merged, isHydrated, user?.id]);
+  }, [merged, isHydrated, user?.id, pendingAutoRefresh]);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
