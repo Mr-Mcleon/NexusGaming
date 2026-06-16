@@ -674,6 +674,26 @@ const ExternalGamesGrid = ({
 }) => {
   const navigate = useNavigate();
   const merged = mergeExternalGames(games);
+  const { cachedAt, isRefreshing, refresh } = useMergedPlaytimeCache(merged);
+
+  const handleRefresh = async () => {
+    const snap = await refresh();
+    if (snap) {
+      toast.success(
+        `Refreshed totals · ${formatPlayTime(snap.totalMinutes)} across ${snap.entries.length} title${snap.entries.length === 1 ? "" : "s"}`,
+      );
+    }
+  };
+
+  const cachedLabel = cachedAt
+    ? new Date(cachedAt).toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
@@ -697,6 +717,23 @@ const ExternalGamesGrid = ({
       </div>
     );
   }
+  const refreshBar = (
+    <div className="flex items-center justify-between gap-3 mb-4 px-1">
+      <p className="text-xs text-muted-foreground">
+        {cachedLabel ? `Totals cached · last refreshed ${cachedLabel}` : "Totals not yet cached"}
+      </p>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleRefresh}
+        disabled={isRefreshing}
+        className="gap-1.5"
+      >
+        <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+        Refresh totals
+      </Button>
+    </div>
+  );
   const deleteAll = (m: MergedExternalGame) => m.entries.forEach((e) => onDelete(e.id));
   if (view === "list") {
     return (
