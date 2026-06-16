@@ -775,35 +775,38 @@ const ExternalGamesGrid = ({
     );
   }
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-      {merged.map((m) => (
-        <div
-          key={m.key}
-          className="group relative rounded-xl overflow-hidden bg-card border border-border/50"
-        >
-          <div className="aspect-[3/4] overflow-hidden bg-secondary/40 flex items-center justify-center">
-            {m.cover_image_url ? (
-              <img src={m.cover_image_url} alt={m.title} className="w-full h-full object-cover" />
-            ) : (
-              <Gamepad2Icon className="w-12 h-12 text-muted-foreground" />
-            )}
-          </div>
-          <button
-            onClick={() => deleteAll(m)}
-            className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-label="Remove"
+    <div>
+      {refreshBar}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+        {merged.map((m) => (
+          <div
+            key={m.key}
+            className="group relative rounded-xl overflow-hidden bg-card border border-border/50"
           >
-            <X className="w-4 h-4" />
-          </button>
-          <div className="absolute top-2 left-2 max-w-[calc(100%-3rem)]">
-            <PlatformChips entries={m.entries} size="xs" />
+            <div className="aspect-[3/4] overflow-hidden bg-secondary/40 flex items-center justify-center">
+              {m.cover_image_url ? (
+                <img src={m.cover_image_url} alt={m.title} className="w-full h-full object-cover" />
+              ) : (
+                <Gamepad2Icon className="w-12 h-12 text-muted-foreground" />
+              )}
+            </div>
+            <button
+              onClick={() => deleteAll(m)}
+              className="absolute top-2 right-2 p-1.5 rounded-lg bg-background/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Remove"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="absolute top-2 left-2 max-w-[calc(100%-3rem)]">
+              <PlatformChips entries={m.entries} size="xs" />
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-transparent space-y-2">
+              <h3 className="font-medium text-sm truncate">{m.title}</h3>
+              {m.totalPlaytime > 0 && <TotalPlaytimePill merged={m} variant="overlay" />}
+            </div>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 to-transparent space-y-2">
-            <h3 className="font-medium text-sm truncate">{m.title}</h3>
-            {m.totalPlaytime > 0 && <TotalPlaytimePill merged={m} variant="overlay" />}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
