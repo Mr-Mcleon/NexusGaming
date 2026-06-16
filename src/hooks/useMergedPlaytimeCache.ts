@@ -89,8 +89,16 @@ export const useMergedPlaytimeCache = (merged: MergedLike[]) => {
       snapshot.entries.length !== merged.length ||
       snapshot.totalMinutes !== liveTotal;
     if (stale || pendingAutoRefresh) {
-      void persist(merged).then(() => {
-        if (pendingAutoRefresh) setPendingAutoRefresh(false);
+      const wasAuto = pendingAutoRefresh;
+      void persist(merged).then((snap) => {
+        if (wasAuto) {
+          setPendingAutoRefresh(false);
+          if (snap) {
+            toast.success("Playtime totals updated", {
+              description: `Last refreshed ${new Date(snap.cachedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} · ${snap.entries.length} title${snap.entries.length === 1 ? "" : "s"}`,
+            });
+          }
+        }
       });
     }
   }, [merged, isHydrated, user?.id, pendingAutoRefresh]);
