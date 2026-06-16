@@ -737,37 +737,40 @@ const ExternalGamesGrid = ({
   const deleteAll = (m: MergedExternalGame) => m.entries.forEach((e) => onDelete(e.id));
   if (view === "list") {
     return (
-      <div className="space-y-3">
-        {merged.map((m) => (
-          <div key={m.key} className="glass-card rounded-xl p-4 flex items-center gap-4">
-            <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-secondary/50 flex items-center justify-center">
-              {m.cover_image_url ? (
-                <img src={m.cover_image_url} alt={m.title} className="w-full h-full object-cover" />
-              ) : (
-                <Gamepad2Icon className="w-8 h-8 text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate">{m.title}</h3>
-              <div className="mt-1">
-                <PlatformChips entries={m.entries} />
+      <div>
+        {refreshBar}
+        <div className="space-y-3">
+          {merged.map((m) => (
+            <div key={m.key} className="glass-card rounded-xl p-4 flex items-center gap-4">
+              <div className="w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-secondary/50 flex items-center justify-center">
+                {m.cover_image_url ? (
+                  <img src={m.cover_image_url} alt={m.title} className="w-full h-full object-cover" />
+                ) : (
+                  <Gamepad2Icon className="w-8 h-8 text-muted-foreground" />
+                )}
               </div>
-              {m.totalPlaytime > 0 && (
-                <div className="mt-2">
-                  <TotalPlaytimePill merged={m} />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium truncate">{m.title}</h3>
+                <div className="mt-1">
+                  <PlatformChips entries={m.entries} />
                 </div>
-              )}
+                {m.totalPlaytime > 0 && (
+                  <div className="mt-2">
+                    <TotalPlaytimePill merged={m} />
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => deleteAll(m)}
+                title={m.entries.length > 1 ? "Remove from all platforms" : "Remove"}
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => deleteAll(m)}
-              title={m.entries.length > 1 ? "Remove from all platforms" : "Remove"}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
