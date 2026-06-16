@@ -174,6 +174,11 @@ export const useImportExternalGames = () => {
     onSuccess: (count) => {
       qc.invalidateQueries({ queryKey: ["external-games"] });
       qc.invalidateQueries({ queryKey: ["linked-accounts"] });
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("external-games:imported", { detail: { count } }),
+        );
+      }
       if (typeof count === "number") toast.success(`Imported ${count} game${count === 1 ? "" : "s"}`);
     },
     onError: (e: Error) => toast.error(e.message || "Import failed"),
