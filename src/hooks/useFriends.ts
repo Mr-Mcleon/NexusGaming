@@ -29,10 +29,16 @@ export const useFriends = () => {
   const fetchFriendships = useCallback(async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from("friendships")
       .select("*")
       .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+
+    if (fetchError) {
+      toast.error("Couldn't load friends");
+      setLoading(false);
+      return;
+    }
 
     if (!data) {
       setFriends([]);
@@ -122,12 +128,17 @@ export const useFriends = () => {
   };
 
   const acceptRequest = async (requestId: string) => {
-    const { error } = await supabase
+    if (!user) return false;
+    // Only the recipient may accept (also enforced server-side).
+    const { data, error } = await supabase
       .from("friendships")
       .update({ status: "accepted" })
-      .eq("id", requestId);
+      .eq("id", requestId)
+      .eq("friend_id", user.id)
+      .eq("status", "pending")
+      .select("id");
 
-    if (error) {
+    if (error || !data?.length) {
       toast.error("Failed to accept request");
       return false;
     }

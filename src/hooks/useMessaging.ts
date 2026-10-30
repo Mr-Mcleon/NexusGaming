@@ -177,44 +177,16 @@ export const useMessaging = () => {
   const startConversation = async (otherUserId: string): Promise<string | null> => {
     if (!user) return null;
 
-    // Check if conversation already exists
-    const { data: myParticipations } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", user.id);
-
-    if (myParticipations?.length) {
-      for (const participation of myParticipations) {
-        const { data: otherParticipant } = await supabase
-          .from("conversation_participants")
-          .select("user_id")
-          .eq("conversation_id", participation.conversation_id)
-          .eq("user_id", otherUserId)
-          .maybeSingle();
-
-        if (otherParticipant) {
-          return participation.conversation_id;
-        }
-      }
+    const { data: convoId, error } = await supabase.rpc(
+      "get_or_create_direct_conversation" as any,
+      { _other_user_id: otherUserId } as any
+    );
+    if (error || !convoId) {
+      console.error("Failed to start conversation:", error);
+      return null;
     }
-
-    // Create new conversation
-    const { data: newConvo, error: convoError } = await supabase
-      .from("conversations")
-      .insert({})
-      .select()
-      .single();
-
-    if (convoError || !newConvo) return null;
-
-    // Add participants
-    await supabase.from("conversation_participants").insert([
-      { conversation_id: newConvo.id, user_id: user.id },
-      { conversation_id: newConvo.id, user_id: otherUserId },
-    ]);
-
     await fetchConversations();
-    return newConvo.id;
+    return convoId as unknown as string;
   };
 
   return {
@@ -386,12 +358,11 @@ export const useConversation = (conversationId: string | null) => {
   const markAsRead = async () => {
     if (!user || !conversationId) return;
 
-    await supabase
-      .from("messages")
-      .update({ read_at: new Date().toISOString() })
-      .eq("conversation_id", conversationId)
-      .neq("sender_id", user.id)
-      .is("read_at", null);
+    const { error } = await supabase.rpc(
+      "mark_conversation_read" as any,
+      { _conversation_id: conversationId } as any
+    );
+    if (error) console.error("Failed to mark messages read:", error);
   };
 
   return {

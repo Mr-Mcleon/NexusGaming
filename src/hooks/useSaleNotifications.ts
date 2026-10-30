@@ -157,18 +157,13 @@ export const useSaleNotificationSubscription = () => {
   }, [user, queryClient]);
 };
 
-// Hook to send email notification for a sale
+// Hook to (re)trigger the email for an existing sale notification.
+// The server loads recipient/title/prices itself and sends at most once per notification.
 export const useSendSaleEmail = () => {
   return useMutation({
-    mutationFn: async (params: {
-      user_id: string;
-      game_id: string;
-      game_title: string;
-      original_price: number;
-      sale_price: number;
-    }) => {
+    mutationFn: async (params: { notification_id: string }) => {
       const response = await supabase.functions.invoke("send-sale-notification-email", {
-        body: params,
+        body: { notification_id: params.notification_id },
       });
 
       if (response.error) {
