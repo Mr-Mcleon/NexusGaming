@@ -94,22 +94,33 @@ export const useCommunities = () => {
 
       if (error) throw error;
 
-      // Add owner as member with owner role
-      await (supabase
+      // Add owner as member with owner role; roll back the community on failure
+      const rollback = async () => {
+        await (supabase.from("communities" as any).delete().eq("id", community.id) as any);
+      };
+      const { error: memberError } = await (supabase
         .from("community_members" as any)
         .insert({
           community_id: community.id,
           user_id: user.id,
           role: "owner",
         } as any) as any);
+      if (memberError) {
+        await rollback();
+        throw memberError;
+      }
 
       // Create default channels
-      await (supabase
+      const { error: channelError } = await (supabase
         .from("community_channels" as any)
         .insert([
           { community_id: community.id, name: "general", type: "text", position: 0 },
           { community_id: community.id, name: "Voice Lobby", type: "voice", position: 1 },
         ] as any) as any);
+      if (channelError) {
+        await rollback();
+        throw channelError;
+      }
 
       toast.success(`"${name}" community created!`);
       await fetchCommunities();
