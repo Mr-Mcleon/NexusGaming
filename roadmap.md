@@ -1,7 +1,10 @@
 # Remaining security remediation
 
-- [ ] Correct sale-email delivery bookkeeping with retryable leases and regression tests.
-- [ ] Verify sale-notification deduplication without deleting existing rows.
-- [ ] Remove unrelated dependencies where safe; retain managed integration files and required migration tooling.
-- [ ] Preserve community rollback and check cleanup errors.
-- [ ] Run available non-destructive checks; report database and deployment limitations.
+- [x] Correct sale-email delivery bookkeeping in source with retryable leases and five passing regression tests.
+- [x] Confirm the original migration defines UNIQUE (user_id, game_id, sale_price); stage a non-destructive guard for databases missing it.
+- [x] Remove unused drizzle-orm/postgres and connection configuration; retain required drizzle-kit/blank schema and platform-managed auth files.
+- [x] Preserve community rollback and surface cleanup failures without changing the feature or deleting existing data.
+- [x] Run app types, email-function types, targeted/full lint, regression tests, and inspect successful preview builds.
+- [ ] Apply staged sale-email migration and verify actual constraint/leases: blocked by unreachable Lovable Cloud database.
+- [ ] Exercise trigger delivery, concurrent calls, failed-send retry, and two-account permissions: blocked by database availability and intentionally undeployed function changes.
+- [ ] Revert managed preview-auth storage only through supported platform regeneration: no supported regeneration action is available.
