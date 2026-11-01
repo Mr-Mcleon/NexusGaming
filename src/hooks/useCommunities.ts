@@ -96,7 +96,13 @@ export const useCommunities = () => {
 
       // Add owner as member with owner role; roll back the community on failure
       const rollback = async () => {
-        await (supabase.from("communities" as any).delete().eq("id", community.id) as any);
+        const { data: removed, error: rollbackError } = await (supabase
+          .from("communities" as any).delete().eq("id", community.id)
+          .eq("owner_id", user.id).select("id") as any);
+        if (rollbackError || !removed?.length) {
+          console.error("Community cleanup failed:", rollbackError ?? "No community removed");
+          toast.error("Community setup failed and could not be cleaned up. Refresh before trying again.");
+        }
       };
       const { error: memberError } = await (supabase
         .from("community_members" as any)

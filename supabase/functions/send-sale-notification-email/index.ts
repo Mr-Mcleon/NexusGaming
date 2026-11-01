@@ -3,19 +3,15 @@
 // Security model:
 // - The only accepted input is `notification_id` (UUID). Recipient, game title and
 //   prices are NEVER taken from the request; they are loaded server-side.
-// - Each notification can be emailed at most once, and only within 1 hour of
-//   creation, via an atomic DB claim (claim_sale_notification_email). Replays and
-//   spoofed calls cannot target arbitrary users or inject content.
+// - Atomic five-minute leases exclude concurrent sends. Failed sends release
+//   the lease; crashes expire. Stable provider idempotency keys protect retries
+//   after ambiguous delivery/bookkeeping failures within the one-hour window.
 // - The recipient's sale-email preference is re-checked.
 // - All dynamic values are HTML-escaped.
 // verify_jwt stays false because the database trigger calls this without a user JWT.
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { deliverClaimedEmail, deliveryIdempotencyKey } from "./delivery.ts";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -27,11 +23,14 @@ const json = (body: unknown, status = 200) =>
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"'`]/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#96;" })[c]!,
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;", "`": "&#96;" })[c] ?? c,
   );
 
 // Strip control chars / newlines (header injection) and bound length for the subject line.
-const safeSubjectText = (s: string) => s.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, 120);
+const safeSubjectText = (s: string) => Array.from(s, (c) => {
+  const code = c.charCodeAt(0);
+  return code < 32 || code === 127 ? " " : c;
+}).join("").slice(0, 120);
 
 const money = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
 
@@ -64,8 +63,8 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   try {
-    // Atomic claim: returns a row only once, only for recent unsent notifications.
-    const { data: claimed, error: claimError } = await admin.rpc("claim_sale_notification_email", {
+    // Only an unclaimed/expired, recent, unsent notification may obtain a lease.
+    const { data: claimed, error: claimError } = await admin.rpc("lease_sale_notification_email", {
       _notification_id: notificationId,
     });
     if (claimError) {
@@ -78,26 +77,35 @@ Deno.serve(async (req) => {
       return json({ success: true, sent: false }, 202);
     }
 
-    const { data: profile } = await admin
+    const finish = async (delivered: boolean) => {
+      const { data, error } = await admin.rpc("finish_sale_notification_email", {
+        _notification_id: notificationId,
+        _claim_token: row.claim_token,
+        _delivered: delivered,
+      });
+      if (error || data !== true) throw new Error("Could not finalize email lease");
+    };
+
+    const sent = await deliverClaimedEmail(async () => {
+    const { data: profile, error: profileError } = await admin
       .from("profiles")
       .select("sale_email_notifications")
       .eq("user_id", row.user_id)
       .maybeSingle();
+    if (profileError) throw new Error("Could not check email preferences");
     if (profile && profile.sale_email_notifications === false) {
-      return json({ success: true, sent: false }, 202);
+      return false;
     }
 
     const { data: userData, error: userError } = await admin.auth.admin.getUserById(row.user_id);
     const email = userData?.user?.email;
-    if (userError || !email) {
-      console.error("recipient lookup failed");
-      return json({ success: true, sent: false }, 202);
-    }
+    if (userError) throw new Error("Recipient lookup failed");
+    if (!email) return false;
 
     const original = Number(row.original_price);
     const sale = Number(row.sale_price);
-    if (!(original > 0) || !(sale >= 0) || sale >= original) {
-      return json({ success: true, sent: false }, 202);
+    if (!Number.isFinite(original) || !Number.isFinite(sale) || !(original > 0) || !(sale >= 0) || sale >= original) {
+      return false;
     }
     const discount = Math.round(((original - sale) / original) * 100);
     const titleRaw = String(row.game_title ?? "A wishlisted game");
@@ -119,7 +127,12 @@ Deno.serve(async (req) => {
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": deliveryIdempotencyKey(notificationId),
+      },
+      signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({
         from: "GameVault <onboarding@resend.dev>",
         to: [email],
@@ -129,10 +142,13 @@ Deno.serve(async (req) => {
     });
     if (!res.ok) {
       console.error("email provider error:", res.status);
-      return json({ error: "Email delivery failed" }, 502);
+      throw new Error("Email delivery failed");
     }
-
-    return json({ success: true, sent: true });
+    const result = await res.json();
+    if (typeof result?.id !== "string" || !result.id) throw new Error("Invalid email provider response");
+    return true;
+    }, finish);
+    return json({ success: true, sent }, sent ? 200 : 202);
   } catch (err) {
     console.error("send-sale-notification-email error:", err instanceof Error ? err.message : err);
     return json({ error: "Internal error" }, 500);
