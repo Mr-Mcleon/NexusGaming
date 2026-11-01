@@ -27,7 +27,10 @@ const escapeHtml = (s: string) =>
   );
 
 // Strip control chars / newlines (header injection) and bound length for the subject line.
-const safeSubjectText = (s: string) => s.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, 120);
+const safeSubjectText = (s: string) => Array.from(s, (c) => {
+  const code = c.charCodeAt(0);
+  return code < 32 || code === 127 ? " " : c;
+}).join("").slice(0, 120);
 
 const money = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
 
