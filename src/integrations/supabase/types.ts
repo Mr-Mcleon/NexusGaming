@@ -547,6 +547,8 @@ export type Database = {
       sale_notifications: {
         Row: {
           created_at: string
+          email_claim_token: string | null
+          email_claim_until: string | null
           email_sent_at: string | null
           game_id: string
           id: string
@@ -557,6 +559,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_claim_token?: string | null
+          email_claim_until?: string | null
           email_sent_at?: string | null
           game_id: string
           id?: string
@@ -567,6 +571,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_claim_token?: string | null
+          email_claim_until?: string | null
           email_sent_at?: string | null
           game_id?: string
           id?: string
@@ -843,6 +849,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      finish_sale_notification_email: {
+        Args: {
+          _claim_token: string
+          _delivered: boolean
+          _notification_id: string
+        }
+        Returns: boolean
+      }
       get_or_create_direct_conversation: {
         Args: { _other_user_id: string }
         Returns: string
@@ -873,6 +887,16 @@ export type Database = {
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
+      }
+      lease_sale_notification_email: {
+        Args: { _notification_id: string }
+        Returns: {
+          claim_token: string
+          game_title: string
+          original_price: number
+          sale_price: number
+          user_id: string
+        }[]
       }
       mark_conversation_read: {
         Args: { _conversation_id: string }
