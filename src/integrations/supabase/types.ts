@@ -547,6 +547,9 @@ export type Database = {
       sale_notifications: {
         Row: {
           created_at: string
+          email_claim_token: string | null
+          email_claim_until: string | null
+          email_sent_at: string | null
           game_id: string
           id: string
           original_price: number
@@ -556,6 +559,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_claim_token?: string | null
+          email_claim_until?: string | null
+          email_sent_at?: string | null
           game_id: string
           id?: string
           original_price: number
@@ -565,6 +571,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_claim_token?: string | null
+          email_claim_until?: string | null
+          email_sent_at?: string | null
           game_id?: string
           id?: string
           original_price?: number
@@ -831,6 +840,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_sale_notification_email: {
+        Args: { _notification_id: string }
+        Returns: {
+          game_title: string
+          original_price: number
+          sale_price: number
+          user_id: string
+        }[]
+      }
+      finish_sale_notification_email: {
+        Args: {
+          _claim_token: string
+          _delivered: boolean
+          _notification_id: string
+        }
+        Returns: boolean
+      }
+      get_or_create_direct_conversation: {
+        Args: { _other_user_id: string }
+        Returns: string
+      }
       get_shared_wishlist: {
         Args: { p_token: string }
         Returns: {
@@ -853,6 +883,24 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      lease_sale_notification_email: {
+        Args: { _notification_id: string }
+        Returns: {
+          claim_token: string
+          game_title: string
+          original_price: number
+          sale_price: number
+          user_id: string
+        }[]
+      }
+      mark_conversation_read: {
+        Args: { _conversation_id: string }
+        Returns: number
       }
       search_profile_user_ids: {
         Args: { _limit?: number; _query: string }
@@ -878,12 +926,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -907,11 +955,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -932,11 +980,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -957,11 +1005,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -974,11 +1022,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

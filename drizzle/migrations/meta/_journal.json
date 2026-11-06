@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793997576930,
+      "tag": "0000_security_hardening_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793997595398,
+      "tag": "0001_sale_email_retry_leases",
+      "breakpoints": true
+    }
+  ]
+}
