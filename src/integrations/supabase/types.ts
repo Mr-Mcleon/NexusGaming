@@ -547,6 +547,7 @@ export type Database = {
       sale_notifications: {
         Row: {
           created_at: string
+          email_sent_at: string | null
           game_id: string
           id: string
           original_price: number
@@ -556,6 +557,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          email_sent_at?: string | null
           game_id: string
           id?: string
           original_price: number
@@ -565,6 +567,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          email_sent_at?: string | null
           game_id?: string
           id?: string
           original_price?: number
@@ -831,6 +834,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_sale_notification_email: {
+        Args: { _notification_id: string }
+        Returns: {
+          game_title: string
+          original_price: number
+          sale_price: number
+          user_id: string
+        }[]
+      }
+      get_or_create_direct_conversation: {
+        Args: { _other_user_id: string }
+        Returns: string
+      }
       get_shared_wishlist: {
         Args: { p_token: string }
         Returns: {
@@ -853,6 +869,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
+      mark_conversation_read: {
+        Args: { _conversation_id: string }
+        Returns: number
       }
       search_profile_user_ids: {
         Args: { _limit?: number; _query: string }
