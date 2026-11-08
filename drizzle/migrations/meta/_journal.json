@@ -15,6 +15,13 @@
       "when": 1793997595398,
       "tag": "0001_sale_email_retry_leases",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794132222114,
+      "tag": "0002_targeted_security_rls",
+      "breakpoints": true
     }
   ]
 }
