@@ -1,5 +1,10 @@
 # Remaining security remediation
 
+- [ ] Create private owner-scoped chat attachment storage and signed attachment flow.
+- [ ] Return accepted-friend leaderboard aggregates through an authenticated RPC.
+- [ ] Verify achievement eligibility server-side and remove direct unlock inserts.
+- [ ] Run targeted checks for these three changes.
+
 - [x] Correct sale-email delivery bookkeeping in source with retryable leases and five passing regression tests.
 - [x] Confirm the original migration defines UNIQUE (user_id, game_id, sale_price); stage a non-destructive guard for databases missing it.
 - [x] Remove unused drizzle-orm/postgres and connection configuration; retain required drizzle-kit/blank schema and platform-managed auth files.
