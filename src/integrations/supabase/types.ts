@@ -857,6 +857,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_friend_leaderboard: {
+        Args: never
+        Returns: {
+          achievement_count: number
+          avatar_url: string
+          games_owned: number
+          total_playtime: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_or_create_direct_conversation: {
         Args: { _other_user_id: string }
         Returns: string
@@ -907,6 +918,10 @@ export type Database = {
         Returns: {
           user_id: string
         }[]
+      }
+      unlock_achievement_if_eligible: {
+        Args: { achievement_id: string }
+        Returns: boolean
       }
     }
     Enums: {

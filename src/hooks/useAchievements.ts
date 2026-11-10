@@ -72,16 +72,11 @@ export const useUnlockAchievement = () => {
     mutationFn: async (achievementId: string) => {
       if (!user) throw new Error("Must be logged in");
 
-      const { error } = await supabase
-        .from("user_achievements")
-        .insert({ user_id: user.id, achievement_id: achievementId });
-
-      if (error) {
-        if (error.message.includes("duplicate")) {
-          return; // Already unlocked, ignore
-        }
-        throw error;
-      }
+      const { data, error } = await supabase.rpc("unlock_achievement_if_eligible", {
+        achievement_id: achievementId,
+      });
+      if (error) throw error;
+      return data === true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-achievements"] });
@@ -125,10 +120,12 @@ export const useAchievementChecker = () => {
 
         if (shouldUnlock) {
           try {
-            await unlockAchievement.mutateAsync(achievement.id);
-            toast.success(`Achievement Unlocked: ${achievement.name}!`, {
-              description: achievement.description,
-            });
+            const unlocked = await unlockAchievement.mutateAsync(achievement.id);
+            if (unlocked) {
+              toast.success(`Achievement Unlocked: ${achievement.name}!`, {
+                description: achievement.description,
+              });
+            }
           } catch {
             // Ignore errors (likely duplicate)
           }

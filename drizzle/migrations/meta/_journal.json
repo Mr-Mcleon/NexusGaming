@@ -29,6 +29,13 @@
       "when": 1794331807630,
       "tag": "0003_20261110173000_messaging_authorization",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794332053779,
+      "tag": "0004_chat_attachments_friend_leaderboard_verified_achievements",
+      "breakpoints": true
     }
   ]
 }

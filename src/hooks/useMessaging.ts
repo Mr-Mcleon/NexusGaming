@@ -318,7 +318,7 @@ export const useConversation = (conversationId: string | null) => {
   const sendMessage = async (content: string, file?: { url: string; name: string; type: string }) => {
     if (!user || !conversationId || (!content.trim() && !file)) return;
 
-    await supabase.from("messages").insert({
+    const { error } = await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
       content: content.trim() || (file ? file.name : ""),
@@ -326,6 +326,7 @@ export const useConversation = (conversationId: string | null) => {
       file_name: file?.name || null,
       file_type: file?.type || null,
     } as any);
+    if (error) throw error;
 
     // Clear typing indicator
     await supabase

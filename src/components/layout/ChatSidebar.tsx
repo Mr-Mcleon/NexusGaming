@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMessaging, useConversation, type Conversation } from "@/hooks/useMessaging";
 import { usePresence } from "@/hooks/usePresence";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CHAT_ATTACHMENT_MAX_BYTES, chatAttachmentMime } from "@/lib/chatAttachments";
 
 interface Channel {
   id: string;
@@ -296,40 +297,55 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
 
   const handleSend = async () => {
     if (!messageInput.trim()) return;
-    await sendMessage(messageInput);
-    setMessageInput("");
-    setTyping(false);
+    try {
+      await sendMessage(messageInput);
+      setMessageInput("");
+      setTyping(false);
+    } catch {
+      const { toast } = await import("sonner");
+      toast.error("Failed to send message");
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > CHAT_ATTACHMENT_MAX_BYTES) {
       const { toast } = await import("sonner");
       toast.error("File size must be under 10MB");
       return;
     }
 
+    const contentType = chatAttachmentMime(file);
+    if (!contentType) {
+      const { toast } = await import("sonner");
+      toast.error("Unsupported attachment type");
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${crypto.randomUUID()}`;
 
       const { error: uploadError } = await supabase.storage
         .from("chat-attachments")
-        .upload(filePath, file, { contentType: file.type });
+        .upload(filePath, file, { contentType });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      // Owner-only storage access: share a time-limited bearer URL in the message.
+      const { data, error: signedUrlError } = await supabase.storage
         .from("chat-attachments")
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 7 * 24 * 60 * 60);
+      if (signedUrlError || !data?.signedUrl) {
+        throw signedUrlError ?? new Error("Could not prepare attachment");
+      }
 
       await sendMessage(messageInput || "", {
-        url: publicUrl,
+        url: data.signedUrl,
         name: file.name,
-        type: file.type,
+        type: contentType,
       });
       setMessageInput("");
     } catch (err) {
@@ -409,7 +425,9 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
                         src={message.file_url}
                         alt={message.file_name || "Image"}
                         className="max-w-full rounded-md cursor-pointer"
-                        onClick={() => window.open(message.file_url!, "_blank")}
+                        onClick={() => {
+                          if (message.file_url) window.open(message.file_url, "_blank", "noopener,noreferrer");
+                        }}
                       />
                       {message.content && message.content !== message.file_name && (
                         <p>{message.content}</p>
@@ -458,7 +476,7 @@ const ChatView = ({ conversationId, onBack, conversations }: ChatViewProps) => {
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept="image/*,.pdf,.doc,.docx,.txt,.zip"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp,image/tiff,image/heic,image/heif,.pdf,.doc,.docx,.txt,.zip"
           onChange={handleFileUpload}
         />
         <div className="flex gap-2">
