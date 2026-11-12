@@ -91,6 +91,20 @@ export const useAchievementChecker = () => {
   const { data: library } = useUserLibrary();
   const { friends } = useFriends();
   const unlockAchievement = useUnlockAchievement();
+  const { data: reviewsWritten } = useQuery({
+    queryKey: ["user-review-count", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count, error } = await supabase
+        .from("game_reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      if (count === null) throw new Error("Review count unavailable");
+      return count;
+    },
+  });
 
   useEffect(() => {
     if (!user || !achievements || !userAchievements || !library) return;
@@ -116,6 +130,9 @@ export const useAchievementChecker = () => {
           case "friends_count":
             shouldUnlock = friendsCount >= achievement.requirement_value;
             break;
+          case "reviews_written":
+            shouldUnlock = reviewsWritten !== undefined && reviewsWritten >= achievement.requirement_value;
+            break;
         }
 
         if (shouldUnlock) {
@@ -134,5 +151,5 @@ export const useAchievementChecker = () => {
     };
 
     checkAndUnlock();
-  }, [user, achievements, userAchievements, library, friends, unlockAchievement]);
+  }, [user, achievements, userAchievements, library, friends, reviewsWritten, unlockAchievement]);
 };

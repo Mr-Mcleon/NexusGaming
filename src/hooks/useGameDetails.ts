@@ -150,6 +150,7 @@ export const useSubmitReview = () => {
     },
     onSuccess: (_, { gameId }) => {
       queryClient.invalidateQueries({ queryKey: ["game-reviews", gameId] });
+      queryClient.invalidateQueries({ queryKey: ["user-review-count", user?.id] });
       toast.success("Review submitted!");
     },
     onError: () => {
@@ -176,6 +177,7 @@ export const useDeleteReview = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["game-reviews"] });
+      queryClient.invalidateQueries({ queryKey: ["user-review-count", user?.id] });
       toast.success("Review deleted");
     },
     onError: () => {
