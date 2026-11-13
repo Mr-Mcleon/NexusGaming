@@ -36,6 +36,13 @@
       "when": 1794332053779,
       "tag": "0004_chat_attachments_friend_leaderboard_verified_achievements",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794553364230,
+      "tag": "0005_messages_add_file_columns",
+      "breakpoints": true
     }
   ]
 }
