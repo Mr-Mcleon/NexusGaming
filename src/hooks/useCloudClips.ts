@@ -38,9 +38,58 @@ export const useCloudClips = () => {
       return data || [];
     } catch (error) {
       console.error("Failed to fetch cloud clips:", error);
-      return [];
+      toast.error("Failed to load cloud clips; existing results have been kept");
+      return null;
     } finally {
       setIsLoadingCloud(false);
+    }
+  }, [user]);
+
+  const persistClip = useCallback(async (clip: Clip) => {
+    if (!user) throw new Error("Not signed in");
+    const { data: previous, error: lookupError } = await supabase
+      .from("cloud_clips").select("storage_path")
+      .eq("user_id", user.id).eq("local_id", clip.id).maybeSingle();
+    if (lookupError) throw lookupError;
+
+    // Never overwrite an existing backup before its replacement metadata is saved.
+    const storagePath = `${user.id}/${clip.id}-${crypto.randomUUID()}.webm`;
+    const { error: uploadError } = await supabase.storage.from("clips")
+      .upload(storagePath, clip.blob, { contentType: "video/webm", upsert: false });
+    if (uploadError) throw uploadError;
+
+    try {
+      const { data, error } = await supabase.from("cloud_clips").upsert({
+        user_id: user.id, local_id: clip.id, name: clip.name,
+        storage_path: storagePath, thumbnail_url: clip.thumbnailUrl || null,
+        duration: clip.duration, size: clip.size,
+      }, { onConflict: "user_id,local_id" }).select("id").single();
+      if (error) throw error;
+      if (!data) throw new Error("Clip metadata was not saved");
+    } catch (error) {
+      // A lost response may hide a committed write: check before removing its object.
+      const { data: committed, error: checkError } = await supabase.from("cloud_clips")
+        .select("id").eq("user_id", user.id).eq("storage_path", storagePath).maybeSingle();
+      if (checkError) {
+        toast.error("Backup could not be verified; its file was retained for safety");
+        throw error;
+      }
+      if (!committed) {
+        const { error: cleanupError } = await supabase.storage.from("clips").remove([storagePath]);
+        if (cleanupError) {
+          console.error("Failed to clean up unsaved clip:", cleanupError);
+          toast.error("Backup failed and its uploaded file could not be cleaned up");
+        }
+        throw error;
+      }
+    }
+
+    if (previous && previous.storage_path !== storagePath) {
+      const { error: cleanupError } = await supabase.storage.from("clips").remove([previous.storage_path]);
+      if (cleanupError) {
+        console.error("Failed to clean up replaced clip:", cleanupError);
+        toast.warning("Backup saved, but the previous file could not be cleaned up");
+      }
     }
   }, [user]);
 
@@ -53,33 +102,7 @@ export const useCloudClips = () => {
 
       setIsSyncing(true);
       try {
-        const storagePath = `${user.id}/${clip.id}.webm`;
-
-        // Upload blob to storage
-        const { error: uploadError } = await supabase.storage
-          .from("clips")
-          .upload(storagePath, clip.blob, {
-            contentType: "video/webm",
-            upsert: true,
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Save metadata
-        const { error: dbError } = await supabase.from("cloud_clips").upsert(
-          {
-            user_id: user.id,
-            local_id: clip.id,
-            name: clip.name,
-            storage_path: storagePath,
-            thumbnail_url: clip.thumbnailUrl || null,
-            duration: clip.duration,
-            size: clip.size,
-          },
-          { onConflict: "user_id,local_id" }
-        );
-
-        if (dbError) throw dbError;
+        await persistClip(clip);
 
         toast.success(`"${clip.name}" backed up to cloud`);
         await fetchCloudClips();
@@ -90,7 +113,7 @@ export const useCloudClips = () => {
         setIsSyncing(false);
       }
     },
-    [user, fetchCloudClips]
+    [user, fetchCloudClips, persistClip]
   );
 
   const uploadAllClips = useCallback(
@@ -110,46 +133,22 @@ export const useCloudClips = () => {
       try {
         for (const clip of clips) {
           try {
-            const storagePath = `${user.id}/${clip.id}.webm`;
-
-            const { error: uploadError } = await supabase.storage
-              .from("clips")
-              .upload(storagePath, clip.blob, {
-                contentType: "video/webm",
-                upsert: true,
-              });
-
-            if (uploadError) throw uploadError;
-
-            const { error: dbError } = await supabase
-              .from("cloud_clips")
-              .upsert(
-                {
-                  user_id: user.id,
-                  local_id: clip.id,
-                  name: clip.name,
-                  storage_path: storagePath,
-                  thumbnail_url: clip.thumbnailUrl || null,
-                  duration: clip.duration,
-                  size: clip.size,
-                },
-                { onConflict: "user_id,local_id" }
-              );
-
-            if (dbError) throw dbError;
+            await persistClip(clip);
             successCount++;
           } catch (err) {
             console.error(`Failed to upload clip "${clip.name}":`, err);
           }
         }
 
-        toast.success(`${successCount}/${clips.length} clips backed up`);
+        if (successCount === 0) toast.error(`No clips backed up; ${clips.length} failed`);
+        else if (successCount < clips.length) toast.warning(`${successCount}/${clips.length} clips backed up; ${clips.length - successCount} failed`);
+        else toast.success(`${successCount}/${clips.length} clips backed up`);
         await fetchCloudClips();
       } finally {
         setIsSyncing(false);
       }
     },
-    [user, fetchCloudClips]
+    [user, fetchCloudClips, persistClip]
   );
 
   const downloadCloudClip = useCallback(
@@ -186,18 +185,40 @@ export const useCloudClips = () => {
       if (!user) return;
 
       try {
+        // Keep a temporary copy so metadata failures can restore the deleted file.
+        const { data: backup, error: backupError } = await supabase.storage
+          .from("clips").download(cloudClip.storage_path);
+        if (backupError) throw backupError;
+        if (!backup) throw new Error("Could not preserve clip for rollback");
+
         const { error: storageError } = await supabase.storage
           .from("clips")
           .remove([cloudClip.storage_path]);
 
         if (storageError) throw storageError;
 
-        const { error: dbError } = await supabase
+        const { data: deleted, error: dbError } = await supabase
           .from("cloud_clips")
           .delete()
-          .eq("id", cloudClip.id);
+          .eq("id", cloudClip.id)
+          .eq("user_id", user.id)
+          .eq("storage_path", cloudClip.storage_path)
+          .select("id");
 
-        if (dbError) throw dbError;
+        if (dbError || !deleted?.length) {
+          const { data: remaining, error: checkError } = await supabase.from("cloud_clips")
+            .select("id").eq("user_id", user.id)
+            .eq("storage_path", cloudClip.storage_path).maybeSingle();
+          if (checkError || remaining) {
+            const { error: restoreError } = await supabase.storage.from("clips")
+              .upload(cloudClip.storage_path, backup, { contentType: "video/webm", upsert: false });
+            if (restoreError) {
+              console.error("Failed to restore clip after metadata deletion failure:", restoreError);
+              toast.error("Clip deletion failed and its file could not be restored; retry is needed");
+            }
+          }
+          throw dbError || new Error("Clip changed or metadata deletion was not confirmed");
+        }
 
         setCloudClips((prev) => prev.filter((c) => c.id !== cloudClip.id));
         toast.success("Cloud clip deleted");
