@@ -43,6 +43,13 @@
       "when": 1794553364230,
       "tag": "0005_messages_add_file_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794553741622,
+      "tag": "0006_external_games_linked_account_ownership",
+      "breakpoints": true
     }
   ]
 }

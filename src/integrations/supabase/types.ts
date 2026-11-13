@@ -237,6 +237,13 @@ export type Database = {
             referencedRelation: "linked_accounts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "external_games_linked_account_owner_fkey"
+            columns: ["linked_account_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "linked_accounts"
+            referencedColumns: ["id", "user_id"]
+          },
         ]
       }
       friendships: {
